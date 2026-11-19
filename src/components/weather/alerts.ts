@@ -50,7 +50,7 @@ export function useAlertText(): (alert: WeatherAlert) => { title: string; descri
   const f = useFormat();
   return useCallback((alert: WeatherAlert) => {
     const fmt = (p?: Record<string, string | number>) => {
-      if (!p) return p;
+      if (!p) return {};
       const out: Record<string, string | number> = { ...p };
       if (typeof p.date === "string") {
         const d = toDate(p.date);

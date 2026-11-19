@@ -219,7 +219,7 @@ export function GardenPlanner() {
   );
 
   const resolveParams = useCallback((params?: Record<string, string | number>) => {
-    if (!params) return params;
+    if (!params) return {};
     const resolved = { ...params };
     if (typeof resolved.plant === "string") resolved.plant = getPlantName(resolved.plant);
     if (typeof resolved.neighbor === "string") resolved.neighbor = getPlantName(resolved.neighbor);
