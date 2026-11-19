@@ -9,6 +9,7 @@ Polly is a hard fork of [Gardener](https://github.com/mniedermaier/gardener) (re
 - Only user-visible branding says "Polly". Internal identifiers keep the Gardener names so existing data, backups and upstream merges stay compatible: the `gardener-storage` persist key, `app: "gardener"` in exports, `GardenerExport`, `GARDENER_TOKEN`, `gardener.db`, Capacitor `appId`. Don't rename them without a migration.
 - Leave `coffeeTitle` and the support links pointing at the original author.
 - Pull upstream changes with `git fetch upstream && git merge upstream/main`.
+- Goals, planned changes and the plant-data decision (Permapeople) are in `docs/ROADMAP.md`. Read it before planning features.
 
 ## Tech Stack
 
