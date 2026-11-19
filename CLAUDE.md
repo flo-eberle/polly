@@ -2,7 +2,13 @@
 
 ## Project Overview
 
-Gardener is a self-sufficiency garden planning application. Plan vegetables, fruit, berries, herbs, and manage livestock (chickens, ducks, rabbits, bees). Runs as a static GitHub Pages site and as a Docker container with an optional backend.
+Polly is a hard fork of [Gardener](https://github.com/mniedermaier/gardener) (remote `upstream`), a self-sufficiency garden planning application. Plan vegetables, fruit, berries, herbs, and manage livestock (chickens, ducks, rabbits, bees). Runs as a static GitHub Pages site and as a Docker container with an optional backend.
+
+### Fork conventions
+
+- Only user-visible branding says "Polly". Internal identifiers keep the Gardener names so existing data, backups and upstream merges stay compatible: the `gardener-storage` persist key, `app: "gardener"` in exports, `GardenerExport`, `GARDENER_TOKEN`, `gardener.db`, Capacitor `appId`. Don't rename them without a migration.
+- Leave `coffeeTitle` and the support links pointing at the original author.
+- Pull upstream changes with `git fetch upstream && git merge upstream/main`.
 
 ## Tech Stack
 

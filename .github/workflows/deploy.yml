@@ -1,8 +1,11 @@
 name: Deploy
 
+# Only manual for now: enable GitHub Pages (Source: GitHub Actions) first,
+# then restore the push trigger below.
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
+  # push:
+  #   branches: [main]
 
 permissions:
   contents: read
@@ -28,7 +31,7 @@ jobs:
       - run: npm ci
       - run: npx tsc -b
       - run: npm run test
-      - run: npm run build -- --base=/gardener/
+      - run: npm run build -- --base=/polly/
       - uses: actions/upload-pages-artifact@v5
         with:
           path: dist

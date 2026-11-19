@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="public/favicon.svg" width="80" height="80" alt="Gardener">
+  <img src="public/favicon.svg" width="80" height="80" alt="Polly">
 </p>
 
-<h1 align="center">Gardener</h1>
+<h1 align="center">Polly</h1>
 
 <p align="center">
   <strong>The open-source toolkit for self-sufficient living</strong><br>
@@ -10,22 +10,31 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/mniedermaier/gardener/actions/workflows/ci.yml"><img src="https://github.com/mniedermaier/gardener/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://github.com/mniedermaier/gardener/actions/workflows/deploy.yml"><img src="https://github.com/mniedermaier/gardener/actions/workflows/deploy.yml/badge.svg" alt="Deploy"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="MIT License"></a>
   <img src="https://img.shields.io/badge/plants-45+-228B22" alt="45+ plants">
   <img src="https://img.shields.io/badge/tests-311-brightgreen" alt="311 tests">
   <img src="https://img.shields.io/badge/i18n-DE%20%7C%20EN%20%7C%20ES%20%7C%20FR-blue" alt="4 languages">
-  <a href="https://buymeacoffee.com/mniedermaier"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?logo=buy-me-a-coffee&logoColor=black" alt="Buy Me a Coffee"></a>
 </p>
 
 <p align="center">
-  <a href="https://mniedermaier.github.io/gardener/"><strong>Try the Live Demo</strong></a>
-  &nbsp;&middot;&nbsp;
   <a href="#quick-start">Quick Start</a>
   &nbsp;&middot;&nbsp;
   <a href="CONTRIBUTING.md">Contribute</a>
 </p>
+
+<p align="center">
+  <em>Polly is a fork of <a href="https://github.com/mniedermaier/gardener">Gardener</a> by Matthias Niedermaier.</em>
+</p>
+
+## About this fork
+
+Polly started from Gardener and goes its own way. Planned changes:
+
+- **2D garden layout**: place beds, paths, trees and other elements to scale, matching the real garden
+- **Plant database**: connect to [Permapeople](https://permapeople.org) open data (CC BY-SA 4.0), plus a German cultivation layer (sowing and harvest timing, spacing, bad neighbours)
+- **Reworked navigation**: menu structure, garden journal and priorities adapted to how we garden
+
+Bug fixes that help Gardener are offered back upstream. Updates from Gardener are merged in from the `upstream` remote.
 
 ---
 
@@ -33,9 +42,9 @@
   <img src="docs/screenshots/dashboard.png" width="800" alt="Dashboard">
 </p>
 
-## What is Gardener?
+## What is Polly?
 
-Gardener is a **complete self-sufficiency planner** — not just for your garden, but for your entire homestead. It answers the question every self-sufficiency beginner asks: **"Can my garden feed my family?"**
+Polly (like Gardener before it) is a **complete self-sufficiency planner** — not just for your garden, but for your entire homestead. It answers the question every self-sufficiency beginner asks: **"Can my garden feed my family?"**
 
 Works **offline as a PWA**, runs as a **static site** (GitHub Pages), or as a **Docker container** with backend sync. Available in **Deutsch, English, Español, Français**.
 
@@ -92,8 +101,8 @@ Works **offline as a PWA**, runs as a **static site** (GitHub Pages), or as a **
 ## Quick Start
 
 ```bash
-git clone https://github.com/mniedermaier/gardener.git
-cd gardener && npm install && npm run dev
+git clone https://github.com/flo-eberle/polly.git
+cd polly && npm install && npm run dev
 ```
 
 Docker:
@@ -172,4 +181,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Issues and PRs welcome!
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE). Original work © 2026 Matthias Niedermaier ([Gardener](https://github.com/mniedermaier/gardener)), changes © 2026 Florian Eberle.
+
+Plant data imported from Permapeople is licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) and credited to [Permapeople.org](https://permapeople.org).

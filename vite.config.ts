@@ -13,8 +13,8 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["locales/**/*.json"],
       manifest: {
-        name: "Gardener - Garden Planner",
-        short_name: "Gardener",
+        name: "Polly - Garden Planner",
+        short_name: "Polly",
         description: "Self-sufficiency garden planner for vegetables, fruit, berries and herbs",
         theme_color: "#15803d",
         background_color: "#f0fdf0",
@@ -64,7 +64,7 @@ export default defineConfig({
       },
     }),
   ],
-  // Shown under Settings → "Über Gardener" (the stores ask for a visible version).
+  // Shown under Settings → "Über Polly" (the stores ask for a visible version).
   define: {
     __APP_VERSION__: JSON.stringify((JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8")) as { version: string }).version),
   },

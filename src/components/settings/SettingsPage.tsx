@@ -417,8 +417,8 @@ export function SettingsPage() {
             </div>
             {[
               { href: `${import.meta.env.BASE_URL}privacy.html`, label: t("settings.privacyPolicy") },
-              { href: "https://github.com/mniedermaier/gardener", label: t("settings.sourceCode") },
-              { href: "https://github.com/mniedermaier/gardener/blob/main/LICENSE", label: t("settings.license") },
+              { href: "https://github.com/flo-eberle/polly", label: t("settings.sourceCode") },
+              { href: "https://github.com/flo-eberle/polly/blob/main/LICENSE", label: t("settings.license") },
             ].map((l) => (
               <div key={l.href} className="py-1 last:pb-0">
                 <a href={l.href} target="_blank" rel="noopener noreferrer" className="flex min-h-11 items-center justify-between gap-3 font-medium text-gray-900 hover:text-garden-700 dark:text-gray-100 dark:hover:text-garden-300">
