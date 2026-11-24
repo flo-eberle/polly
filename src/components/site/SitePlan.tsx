@@ -354,6 +354,9 @@ export function SitePlan() {
 
 }
 
+/** A switched-on toggle (hidden, locked) stands out from the default state. */
+const PRESSED = "bg-garden-50 ring-1 ring-inset ring-garden-600/40 dark:bg-garden-500/15 dark:ring-garden-300/40";
+
 interface LayerRowProps {
   layer: SiteLayerId;
   state: { visible: boolean; locked: boolean };
@@ -372,6 +375,8 @@ function LayerRow({ layer, state, onChange }: LayerRowProps) {
               icon={state.visible ? Eye : EyeOff}
           label={t(state.visible ? "site.layers.hide" : "site.layers.show", { name })}
           aria-pressed={!state.visible}
+          tone={state.visible ? "neutral" : "brand"}
+          className={state.visible ? "" : PRESSED}
           onClick={() => onChange(layer, { visible: !state.visible })}
         />
         <IconButton
@@ -379,6 +384,8 @@ function LayerRow({ layer, state, onChange }: LayerRowProps) {
           icon={state.locked ? Lock : LockOpen}
           label={t(state.locked ? "site.layers.unlock" : "site.layers.lock", { name })}
           aria-pressed={state.locked}
+          tone={state.locked ? "brand" : "neutral"}
+          className={state.locked ? PRESSED : ""}
           onClick={() => onChange(layer, { locked: !state.locked })}
         />
       </span>
