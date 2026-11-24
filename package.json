@@ -1,7 +1,7 @@
 {
   "name": "polly",
   "private": true,
-  "version": "1.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -17,7 +17,8 @@
     "cap:sync": "cap sync",
     "cap:android": "npm run build:native && cap open android",
     "cap:ios": "npm run build:native && cap open ios",
-    "cap:run:android": "npm run build:native && cap run android"
+    "cap:run:android": "npm run build:native && cap run android",
+    "version:set": "node scripts/set-version.mjs"
   },
   "dependencies": {
     "@capacitor/app": "^8.1.2",

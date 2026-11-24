@@ -48,6 +48,8 @@ export type Change =
 /** What both sides last agreed on, persisted per backend. */
 export interface SyncBase {
   backendUrl: string;
+  /** Server epoch the revision belongs to; changes with every server start. */
+  epoch?: string;
   /** Highest server revision this device has pulled. */
   rev: number;
   /** "collection/id" → hash of the agreed version. */
@@ -249,4 +251,23 @@ export function initialBase(state: State, remote: RemoteChange[]): ApplyResult {
     if (mine) pretendBase[key] = mine.hash;
   }
   return applyRemoteChanges(state, pretendBase, remote);
+}
+
+/**
+ * Joining again after the server's epoch changed, e.g. after its database was
+ * restored from a backup. `remote` is the server's complete state including
+ * tombstones.
+ *
+ * The old base still tells which local records are unpushed edits: those win
+ * and go out with the next push. Clean records take the server's version. A
+ * record the server has neither as a row nor as a tombstone was lost by the
+ * restore; dropping its base hash makes the next push send it back.
+ */
+export function rejoinBase(state: State, oldBase: Record<string, string>, remote: RemoteChange[]): ApplyResult {
+  const result = applyRemoteChanges(state, oldBase, remote);
+  const onServer = new Set(remote.map((change) => recordKey(change.collection, change.id)));
+  for (const key of Object.keys(result.hashes)) {
+    if (!onServer.has(key)) delete result.hashes[key];
+  }
+  return result;
 }

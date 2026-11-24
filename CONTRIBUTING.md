@@ -1,12 +1,13 @@
-# Contributing to Gardener
+# Contributing to Polly
 
-Thank you for your interest in contributing to Gardener!
+Thank you for your interest in contributing to Polly! Polly is a fork of
+[Gardener](https://github.com/mniedermaier/gardener); see the README for what differs.
 
 ## Getting Started
 
 ```bash
-git clone https://github.com/mniedermaier/gardener.git
-cd gardener
+git clone https://github.com/flo-eberle/polly.git
+cd polly
 npm install
 npm run dev
 ```
@@ -20,12 +21,20 @@ npm run dev
 
 ## How to Contribute
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/my-feature`)
-3. Make your changes
-4. Ensure tests pass: `npm run test && npm run build`
-5. Commit your changes with a descriptive message
-6. Push to your fork and open a Pull Request
+1. Fork the repository (or, as a maintainer, branch off `main`)
+2. Create a branch: `feat/…`, `fix/…`, `docs/…`, `chore/…`
+3. Make your changes and add user-visible ones to `## [Unreleased]` in
+   [CHANGELOG.md](CHANGELOG.md)
+4. Ensure checks pass: `npm run lint && npm run test && npm run build`
+   (and `npm test` in `backend/` when the backend changed)
+5. Commit using [Conventional Commits](https://www.conventionalcommits.org/)
+   (`feat(planner): …`, `fix: …`)
+6. Push and open a pull request against `main`
+
+`main` is protected: changes land only through pull requests with passing CI.
+Write everything on GitHub (PRs, issues, commits) in English. Branching,
+versioning and releases are described in [docs/RELEASING.md](docs/RELEASING.md);
+an overview of the code is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Guidelines
 
@@ -46,11 +55,11 @@ See [CLAUDE.md](CLAUDE.md#adding-a-new-page) for the checklist.
 
 ## Reporting Bugs
 
-Use the [bug report template](https://github.com/mniedermaier/gardener/issues/new?template=bug_report.yml).
+Use the [bug report template](https://github.com/flo-eberle/polly/issues/new?template=bug_report.yml).
 
 ## Feature Requests
 
-Use the [feature request template](https://github.com/mniedermaier/gardener/issues/new?template=feature_request.yml).
+Use the [feature request template](https://github.com/flo-eberle/polly/issues/new?template=feature_request.yml).
 
 ## Security
 

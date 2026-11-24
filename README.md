@@ -156,15 +156,18 @@ environment:
 
 ### How sync behaves
 
-The backend stores one snapshot of the whole state, so this is single-user sync
-with last-write-wins at snapshot level:
+Sync works per record (details in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#sync)):
 
-- A device pulls before its first push, so a freshly connected device picks up
-  what is already there instead of overwriting it.
-- Deletions and edits propagate: each pushed snapshot is authoritative, and the
-  backend drops what the snapshot no longer contains.
-- If both sides changed since they last agreed, nothing is discarded — the
-  collections are merged by id and the local copy wins on conflict.
+- A device sends only the records it changed, about 2 s after the change, and
+  fetches changes from other devices every 30 s and when the window comes back
+  into view.
+- Deletions reach every device; they are kept on the server as tombstones.
+- Conflicts are resolved per record: an edit not yet sent from this device
+  wins, otherwise the server's version is taken.
+- A device connecting for the first time keeps its own records and takes the
+  server's copy where both have the same record.
+- After a server restart or a restored database backup, devices join again
+  and send back whatever the server lost.
 
 ## Data Safety
 
