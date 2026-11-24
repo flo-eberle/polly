@@ -37,7 +37,7 @@ const PERSISTED_KEYS = [
   // Einstellungen
   "locale", "weatherApiKey", "locationLat", "locationLon", "locationName", "locationRegion",
   "lastFrostDate", "gridCellSizeCm", "backendUrl", "theme", "alerts",
-  "lastBackupDate", "lastSyncedAt",
+  "lastBackupDate", "syncBase",
 ] as const satisfies ReadonlyArray<keyof AppStore>;
 
 export const useStore = create<AppStore>()(

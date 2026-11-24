@@ -1,66 +1,195 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { useStore } from "@/store";
+import { describe, it, expect } from "vitest";
+import {
+  applyRemoteChanges,
+  collectLocalRecords,
+  diffAgainstBase,
+  hashRecord,
+  initialBase,
+  recordId,
+  type SyncBase,
+} from "@/lib/sync/records";
+import { runSyncRound, type SyncStore } from "@/lib/sync/client";
 
 /**
- * Covers the snapshot semantics the sync relies on. The hook itself needs a
- * backend; what matters here is that the store can adopt a remote snapshot
- * (so deletions and edits arrive) and merge without dropping local records.
+ * Record sync. The backend is replaced by an in-memory double with the same
+ * semantics as backend/src/routes/changes.ts (its own tests run there), so two
+ * "devices" can be synced against each other here.
  */
 
-const COLLECTION = "harvests" as const;
+type Item = Record<string, unknown>;
 
-type Harvest = { id: string; plantId: string; date: string; weightGrams: number };
-
-function harvest(id: string, weightGrams = 100): Harvest {
-  return { id, plantId: "tomato", date: "2026-08-01", weightGrams };
+function fakeBackend() {
+  const rows = new Map<string, { collection: string; id: string; data: Item | null; version: number; deleted: boolean }>();
+  let rev = 0;
+  const fetchFn = (async (input: string, init?: RequestInit) => {
+    const url = new URL(input);
+    if (init?.method === "POST") {
+      const { changes } = JSON.parse(String(init.body)) as {
+        changes: Array<{ collection: string; id: string; deleted?: boolean; data?: Item }>;
+      };
+      for (const c of changes) {
+        rows.set(`${c.collection}/${c.id}`, {
+          collection: c.collection,
+          id: c.id,
+          data: c.deleted ? null : (JSON.parse(JSON.stringify(c.data)) as Item),
+          version: ++rev,
+          deleted: !!c.deleted,
+        });
+      }
+      return new Response(JSON.stringify({ rev }));
+    }
+    const since = Number(url.searchParams.get("since") ?? 0);
+    const changes = [...rows.values()]
+      .filter((r) => (since === 0 ? !r.deleted : r.version > since))
+      .sort((a, b) => a.version - b.version)
+      .map((r) => ({ collection: r.collection, id: r.id, version: r.version, ...(r.deleted ? { deleted: true } : { data: r.data }) }));
+    return new Response(JSON.stringify({ rev, changes }));
+  }) as typeof fetch;
+  return { fetchFn, rows };
 }
 
-function mergeById<T extends { id: string }>(local: T[], remote: T[]): T[] {
-  const known = new Set(local.map((item) => item.id));
-  return [...local, ...remote.filter((item) => !known.has(item.id))];
+const SETTINGS = {
+  locale: "de", lastFrostDate: "2026-05-15", gridCellSizeCm: 30, locationLat: null, locationLon: null,
+  locationName: "", locationRegion: "", theme: "system", alerts: { frostAlertEnabled: true },
+};
+
+function device(initial: Item = {}) {
+  let state: Item & { syncBase: SyncBase | null } = { ...SETTINGS, harvests: [], gardens: [], seasonArchives: [], syncBase: null, ...initial };
+  const store: SyncStore = {
+    getState: () => state,
+    setState: (partial) => {
+      state = { ...state, ...partial } as typeof state;
+    },
+  };
+  return {
+    store,
+    get state() { return state; },
+    set(partial: Item) { store.setState(partial); },
+  };
 }
 
-describe("Sync snapshot handling", () => {
-  beforeEach(() => {
-    useStore.setState({ [COLLECTION]: [] } as never);
+const URL_ = "http://backend";
+const h = (id: string, weightGrams = 100) => ({ id, plantId: "tomato", date: "2026-08-01", weightGrams });
+const ids = (items: unknown) => (items as Item[]).map((i) => i.id);
+
+describe("record helpers", () => {
+  it("identifies season archives without an id", () => {
+    expect(recordId("seasonArchives", { gardenId: "g1", season: "2025", archivedAt: "x" })).toBe("g1@2025@x");
+    expect(recordId("harvests", { plantId: "x" })).toBeNull();
   });
 
-  it("adopting a snapshot removes records deleted elsewhere", () => {
-    useStore.setState({ [COLLECTION]: [harvest("a"), harvest("b")] } as never);
-
-    // Another device deleted "b" and pushed its snapshot.
-    useStore.setState({ [COLLECTION]: [harvest("a")] } as never);
-
-    const ids = useStore.getState()[COLLECTION].map((h) => h.id);
-    expect(ids).toEqual(["a"]);
+  it("finds upserts and deletions against the base", () => {
+    const local = collectLocalRecords({ ...SETTINGS, harvests: [h("a", 150), h("c")] });
+    const base = {
+      "harvests/a": hashRecord(h("a")),
+      "harvests/b": hashRecord(h("b")),
+      "settings/settings": [...local.values()].find((r) => r.collection === "settings")!.hash,
+    };
+    const changes = diffAgainstBase(local, base);
+    expect(changes.map((c) => [c.id, !!c.deleted]).sort()).toEqual([["a", false], ["b", true], ["c", false]]);
   });
 
-  it("adopting a snapshot carries over edits made elsewhere", () => {
-    useStore.setState({ [COLLECTION]: [harvest("a", 100)] } as never);
-    useStore.setState({ [COLLECTION]: [harvest("a", 250)] } as never);
-
-    expect(useStore.getState()[COLLECTION][0].weightGrams).toBe(250);
+  it("keeps a local edit that is not pushed yet", () => {
+    const state = { ...SETTINGS, harvests: [h("a", 999)] };
+    const base = { "harvests/a": hashRecord(h("a")) };
+    const { updates } = applyRemoteChanges(state, base, [{ collection: "harvests", id: "a", data: h("a", 200) }]);
+    expect(updates.harvests).toBeUndefined();
   });
 
-  it("merging keeps local records the remote does not know", () => {
-    const local = [harvest("local-only"), harvest("shared")];
-    const remote = [harvest("shared"), harvest("remote-only")];
-
-    const merged = mergeById(local, remote);
-
-    expect(merged.map((h) => h.id).sort()).toEqual(["local-only", "remote-only", "shared"]);
+  it("ignores collections this version does not know", () => {
+    const { updates } = applyRemoteChanges({ ...SETTINGS }, {}, [{ collection: "futureThings", id: "x", data: { id: "x" } }]);
+    expect(updates).toEqual({});
   });
 
-  it("merging prefers the local copy on conflict", () => {
-    const merged = mergeById([harvest("shared", 100)], [harvest("shared", 999)]);
+  it("lets the server win the overlap on first contact", () => {
+    const state = { ...SETTINGS, harvests: [h("a", 1), h("local")] };
+    const { updates } = initialBase(state, [{ collection: "harvests", id: "a", data: h("a", 2) }]);
+    expect(updates.harvests).toEqual([h("a", 2), h("local")]);
+  });
+});
 
-    expect(merged).toHaveLength(1);
-    expect(merged[0].weightGrams).toBe(100);
+describe("sync rounds between two devices", () => {
+  it("brings records, edits and deletions from one device to the other", async () => {
+    const server = fakeBackend();
+    const a = device({ harvests: [h("1"), h("2")] });
+    const b = device();
+
+    await runSyncRound(a.store, URL_, "full", server.fetchFn);
+    await runSyncRound(b.store, URL_, "full", server.fetchFn);
+    expect(ids(b.state.harvests)).toEqual(["1", "2"]);
+
+    a.set({ harvests: [h("1", 500)] }); // edit 1, delete 2
+    await runSyncRound(a.store, URL_, "push", server.fetchFn);
+    await runSyncRound(b.store, URL_, "full", server.fetchFn);
+    expect(b.state.harvests).toEqual([h("1", 500)]);
   });
 
-  it("tracks the snapshot the device last agreed with", () => {
-    expect(useStore.getState().lastSyncedAt).toBeNull();
-    useStore.getState().setLastSyncedAt("2026-08-23T10:00:00.000Z");
-    expect(useStore.getState().lastSyncedAt).toBe("2026-08-23T10:00:00.000Z");
+  it("only sends what changed", async () => {
+    const server = fakeBackend();
+    const a = device({ harvests: [h("1"), h("2")] });
+    await runSyncRound(a.store, URL_, "full", server.fetchFn);
+
+    a.set({ harvests: [h("1"), h("2", 7)] });
+    const result = await runSyncRound(a.store, URL_, "push", server.fetchFn);
+    expect(result.pushed).toBe(1);
+
+    const again = await runSyncRound(a.store, URL_, "push", server.fetchFn);
+    expect(again.pushed).toBe(0);
+  });
+
+  it("keeps the local-only records of a device that joins late", async () => {
+    const server = fakeBackend();
+    const a = device({ harvests: [h("shared", 1)] });
+    await runSyncRound(a.store, URL_, "full", server.fetchFn);
+
+    const b = device({ harvests: [h("shared", 2), h("only-b")] });
+    await runSyncRound(b.store, URL_, "full", server.fetchFn);
+    expect(b.state.harvests).toEqual([h("shared", 1), h("only-b")]);
+
+    await runSyncRound(a.store, URL_, "full", server.fetchFn);
+    expect(ids(a.state.harvests)).toEqual(["shared", "only-b"]);
+  });
+
+  it("does not resurrect a record deleted elsewhere", async () => {
+    const server = fakeBackend();
+    const a = device({ harvests: [h("1")] });
+    const b = device();
+    await runSyncRound(a.store, URL_, "full", server.fetchFn);
+    await runSyncRound(b.store, URL_, "full", server.fetchFn);
+
+    b.set({ harvests: [] });
+    await runSyncRound(b.store, URL_, "push", server.fetchFn);
+    a.set({ harvests: [...(a.state.harvests as Item[]), h("new")] });
+    await runSyncRound(a.store, URL_, "full", server.fetchFn);
+
+    expect(ids(a.state.harvests)).toEqual(["new"]);
+    expect(server.rows.get("harvests/1")?.deleted).toBe(true);
+  });
+
+  it("syncs settings and fields the app does not know yet", async () => {
+    const server = fakeBackend();
+    const a = device({ locale: "en", harvests: [{ ...h("1"), futureField: { x: 1 } }] });
+    const b = device();
+    await runSyncRound(a.store, URL_, "full", server.fetchFn);
+    await runSyncRound(b.store, URL_, "full", server.fetchFn);
+    expect(b.state.locale).toBe("en");
+    expect((b.state.harvests as Item[])[0].futureField).toEqual({ x: 1 });
+  });
+
+  it("starts over when the backend URL changes", async () => {
+    const first = fakeBackend();
+    const second = fakeBackend();
+    const a = device({ harvests: [h("1")] });
+    await runSyncRound(a.store, URL_, "full", first.fetchFn);
+    await runSyncRound(a.store, "http://other", "full", second.fetchFn);
+    expect(second.rows.has("harvests/1")).toBe(true);
+    expect(a.state.syncBase?.backendUrl).toBe("http://other");
+  });
+
+  it("leaves the base untouched when the backend is unreachable", async () => {
+    const a = device({ harvests: [h("1")] });
+    const failing = (async () => new Response("down", { status: 503 })) as typeof fetch;
+    await expect(runSyncRound(a.store, URL_, "full", failing)).rejects.toThrow();
+    expect(a.state.syncBase).toBeNull();
   });
 });
