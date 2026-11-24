@@ -26,7 +26,8 @@ Diese Tools nicht erneut als Ersatz vorschlagen.
 
 ## Gewünschte Änderungen
 
-- **2D-Gartenlayout** wie in Open Garden Planner (ohne 3D).
+- **2D-Gartenlayout** wie in Open Garden Planner (ohne 3D). Plan dazu, einschließlich
+  des neuen Syncs pro Eintrag: `docs/PLAN_LAGEPLAN.md`.
 - **Anbindung an eine externe Pflanzendatenbank** statt nur der statischen
   `src/data/plants.json` (siehe unten).
 - **Menü, Journal und Gewichtung überarbeiten.**

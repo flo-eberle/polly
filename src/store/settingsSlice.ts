@@ -1,5 +1,6 @@
 import type { StateCreator } from "zustand";
 import { deviceLocale } from "@/lib/deviceLocale";
+import type { SyncBase } from "@/lib/sync/records";
 
 export interface AlertConfig {
   frostAlertEnabled: boolean;
@@ -23,8 +24,8 @@ export interface SettingsSlice {
   theme: "light" | "dark" | "system";
   alerts: AlertConfig;
   lastBackupDate: string | null;
-  /** savedAt of the backend snapshot this device last agreed with. */
-  lastSyncedAt: string | null;
+  /** What this device last agreed on with the backend (record sync). */
+  syncBase: SyncBase | null;
   setLocale: (locale: "de" | "en" | "es" | "fr") => void;
   setWeatherApiKey: (key: string) => void;
   setLocation: (lat: number, lon: number, name: string, region?: string) => void;
@@ -34,7 +35,7 @@ export interface SettingsSlice {
   setGridCellSizeCm: (size: number) => void;
   setAlerts: (alerts: Partial<AlertConfig>) => void;
   setLastBackupDate: (date: string) => void;
-  setLastSyncedAt: (savedAt: string | null) => void;
+  setSyncBase: (base: SyncBase | null) => void;
 }
 
 export const createSettingsSlice: StateCreator<SettingsSlice> = (set) => ({
@@ -48,7 +49,7 @@ export const createSettingsSlice: StateCreator<SettingsSlice> = (set) => ({
   gridCellSizeCm: 30,
   backendUrl: null,
   theme: "system",
-  lastSyncedAt: null,
+  syncBase: null,
   alerts: {
     frostAlertEnabled: true,
     frostThresholdC: 2,
@@ -68,5 +69,5 @@ export const createSettingsSlice: StateCreator<SettingsSlice> = (set) => ({
   setAlerts: (updates) =>
     set((state) => ({ alerts: { ...state.alerts, ...updates } })),
   setLastBackupDate: (lastBackupDate) => set({ lastBackupDate }),
-  setLastSyncedAt: (lastSyncedAt) => set({ lastSyncedAt }),
+  setSyncBase: (syncBase) => set({ syncBase }),
 });
