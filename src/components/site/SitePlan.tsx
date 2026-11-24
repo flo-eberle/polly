@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
-import { Eye, EyeOff, ImagePlus, Lock, LockOpen, Map as MapIcon, Maximize, Ruler, Trash2 } from "lucide-react";
+import { Eye, EyeOff, ImagePlus, Lock, LockOpen, Map as MapIcon, Maximize, PenLine, Ruler, Trash2, X } from "lucide-react";
 import { useStore } from "@/store";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/Button";
@@ -22,22 +22,30 @@ import {
   scaleBar,
   type View,
 } from "@/lib/siteGeometry";
-import { SITE_LAYERS, layerState, type SiteLayerId } from "@/types/site";
+import { shapeArea, shapeBounds, shapeLength, unionBounds } from "@/lib/siteShapes";
+import { newSiteElement } from "@/store/siteSlice";
+import { SITE_LAYERS, layerState, type SiteElement, type SiteLayerId, type SiteShape } from "@/types/site";
 import { SiteCanvas, type SiteTool } from "./SiteCanvas";
+import { SiteToolbar } from "./SiteToolbar";
+import { elementType } from "./elementTypes";
+import { useElementHistory } from "./useElementHistory";
 import { useSiteImage } from "./useSiteImage";
 import { useIsDark } from "./useIsDark";
 
 const DEFAULT_VIEW: View = { x: 0, y: 0, scale: 10 };
 
-/** Site plan, phase 1: background image, calibration, north direction, layers. */
+const SELECT: SiteTool = { type: "select" };
+
+/** Site plan: background image, calibration, north direction, layers, drawing and editing. */
 export function SitePlan() {
   const { t, i18n } = useTranslation();
   const { toast, confirm } = useToast();
   const editable = usePointerFine();
   const dark = useIsDark();
-  const { settings, backendUrl, setSiteBackground, updateSiteBackground, setNorthDeg, setSiteLayer } = useStore(
+  const { settings, elements, backendUrl, setSiteBackground, updateSiteBackground, setNorthDeg, setSiteLayer } = useStore(
     useShallow((s) => ({
       settings: s.siteSettings,
+      elements: s.siteElements,
       backendUrl: s.backendUrl,
       setSiteBackground: s.setSiteBackground,
       updateSiteBackground: s.updateSiteBackground,
@@ -53,9 +61,13 @@ export function SitePlan() {
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [view, setView] = useState<View>(DEFAULT_VIEW);
   const [fittedFor, setFittedFor] = useState<string | null>(null);
-  const [tool, setTool] = useState<SiteTool>("pan");
+  const [tool, setTool] = useState<SiteTool>(SELECT);
   const [measured, setMeasured] = useState<number | null>(null);
   const [importing, setImporting] = useState(false);
+  const [startedBlank, setStartedBlank] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const { commit, undo, redo, canUndo, canRedo } = useElementHistory();
+  const selected = elements.find((e) => e.id === selectedId) ?? null;
 
   useEffect(() => {
     const el = containerRef.current;
@@ -68,17 +80,20 @@ export function SitePlan() {
   }, []);
 
   const fitView = useCallback(() => {
-    if (!bg || size.width === 0) {
+    if (size.width === 0) return;
+    const bounds = unionBounds([
+      bg ? rotatedRectBounds(bg.x, bg.y, bg.widthPx * bg.metersPerPixel, bg.heightPx * bg.metersPerPixel, bg.rotationDeg) : null,
+      ...elements.map((e) => shapeBounds(e.shape)),
+    ]);
+    if (!bounds) {
       setView({ ...DEFAULT_VIEW, x: size.width / 2, y: size.height / 2 });
       return;
     }
-    const w = bg.widthPx * bg.metersPerPixel;
-    const h = bg.heightPx * bg.metersPerPixel;
-    setView(fitBounds(rotatedRectBounds(bg.x, bg.y, w, h, bg.rotationDeg), size));
-  }, [bg, size]);
+    setView(fitBounds(bounds, size));
+  }, [bg, elements, size]);
 
-  // Fit once per image as soon as the canvas has a size.
-  const fitKey = bg && size.width > 0 ? `${bg.imageId}` : size.width > 0 ? "empty" : null;
+  // Fit once per image (or once for a plan without one) as soon as the canvas has a size.
+  const fitKey = size.width === 0 ? null : bg ? bg.imageId : "no-background";
   if (fitKey && fitKey !== fittedFor) {
     setFittedFor(fitKey);
     fitView();
@@ -104,7 +119,7 @@ export function SitePlan() {
         calibrated: false,
       });
       if (previous) void deleteBlob(previous).catch(() => undefined);
-      setTool("pan");
+      setTool(SELECT);
       toast(t("site.background.imported"), "success");
     } catch {
       toast(t("site.background.importFailed"), "error");
@@ -145,13 +160,56 @@ export function SitePlan() {
       calibrated: true,
     });
     setMeasured(null);
-    setTool("pan");
+    setTool(SELECT);
     setFittedFor(null); // refit to the corrected size
     toast(t("site.calibrate.done", { length: formatLength(actualM, i18n.language) }), "success");
   };
 
+  // --- Elements ---------------------------------------------------------------
+
+  const createElement = useCallback((kind: string, shape: SiteShape) => {
+    const type = elementType(kind);
+    const created = newSiteElement({ kind, layer: type.layer, shape, status: "existing" });
+    commit([...useStore.getState().siteElements, created]);
+    setSelectedId(created.id);
+  }, [commit]);
+
+  const changeShape = useCallback((id: string, shape: SiteShape) => {
+    const stamp = new Date().toISOString();
+    commit(useStore.getState().siteElements.map((e) => (e.id === id ? { ...e, shape, updatedAt: stamp } : e)));
+  }, [commit]);
+
+  const deleteSelected = useCallback(async () => {
+    const target = useStore.getState().siteElements.find((e) => e.id === selectedId);
+    if (!target) return;
+    const name = target.name || t(elementType(target.kind).labelKey);
+    const ok = await confirm({
+      title: t("site.element.deleteTitle", { name }),
+      message: t("site.element.deleteMessage"),
+      confirmLabel: t("common.delete"),
+    });
+    if (!ok) return;
+    commit(useStore.getState().siteElements.filter((e) => e.id !== target.id));
+    setSelectedId(null);
+  }, [commit, confirm, selectedId, t]);
+
+  const handleEscape = useCallback(() => {
+    if (tool.type !== "select") setTool(SELECT);
+    else setSelectedId(null);
+  }, [tool]);
+
+  const changeTool = (next: SiteTool) => {
+    setTool(next);
+    if (next.type !== "select") setSelectedId(null);
+  };
+
   const bar = scaleBar(view.scale);
-  const showCanvas = !!bg;
+  const showCanvas = !!bg || elements.length > 0 || startedBlank;
+  const toolHint =
+    tool.type === "calibrate" ? t("site.calibrate.hint")
+    : tool.type === "measure" ? t("site.measure.hint")
+    : tool.type === "draw" ? t(`site.hints.${tool.shape}`)
+    : null;
 
   return (
     <div className="flex h-full flex-col">
@@ -159,20 +217,20 @@ export function SitePlan() {
         title={t("site.title")}
         description={editable ? t("site.subtitle") : t("site.subtitleViewOnly")}
         className="mb-4"
-        actions={editable && bg ? (
+        actions={editable && showCanvas ? (
           <>
             <Button variant="secondary" onClick={() => void pickFile()} disabled={importing}>
               <ImagePlus size={16} aria-hidden="true" />
-              {t("site.background.replace")}
+              {bg ? t("site.background.replace") : t("site.background.import")}
             </Button>
-            <Button
-              variant={tool === "calibrate" ? "primary" : "secondary"}
-              aria-pressed={tool === "calibrate"}
-              onClick={() => setTool(tool === "calibrate" ? "pan" : "calibrate")}
+            {bg && <Button
+              variant={tool.type === "calibrate" ? "primary" : "secondary"}
+              aria-pressed={tool.type === "calibrate"}
+              onClick={() => changeTool(tool.type === "calibrate" ? SELECT : { type: "calibrate" })}
             >
               <Ruler size={16} aria-hidden="true" />
               {t("site.calibrate.action")}
-            </Button>
+            </Button>}
           </>
         ) : undefined}
       />
@@ -197,10 +255,16 @@ export function SitePlan() {
           title={t("site.empty.title")}
           description={editable ? t("site.empty.description") : t("site.empty.descriptionViewOnly")}
           action={editable ? (
-            <Button onClick={() => void pickFile()} disabled={importing}>
-              <ImagePlus size={16} aria-hidden="true" />
-              {t("site.background.import")}
-            </Button>
+            <div className="flex flex-wrap justify-center gap-2">
+              <Button onClick={() => void pickFile()} disabled={importing}>
+                <ImagePlus size={16} aria-hidden="true" />
+                {t("site.background.import")}
+              </Button>
+              <Button variant="secondary" onClick={() => setStartedBlank(true)}>
+                <PenLine size={16} aria-hidden="true" />
+                {t("site.empty.startBlank")}
+              </Button>
+            </div>
           ) : undefined}
         />
       ) : null}
@@ -219,12 +283,41 @@ export function SitePlan() {
               view={view}
               onViewChange={setView}
               settings={settings}
+              elements={elements}
               image={image}
               editable={editable}
               tool={tool}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              onCreate={createElement}
+              onShapeChange={changeShape}
               onMeasured={setMeasured}
               onBackgroundMoved={(x, y) => updateSiteBackground({ x, y })}
+              onEscape={handleEscape}
+              onDeleteSelected={() => void deleteSelected()}
+              onUndo={undo}
+              onRedo={redo}
               dark={dark}
+            />
+          )}
+
+          {editable && (
+            <SiteToolbar
+              tool={tool}
+              onToolChange={changeTool}
+              onUndo={undo}
+              onRedo={redo}
+              canUndo={canUndo}
+              canRedo={canRedo}
+            />
+          )}
+
+          {selected && (
+            <SelectionInfo
+              element={selected}
+              editable={editable}
+              onDelete={() => void deleteSelected()}
+              onClose={() => setSelectedId(null)}
             />
           )}
 
@@ -247,12 +340,12 @@ export function SitePlan() {
             <IconButton icon={Maximize} label={t("site.fit")} onClick={fitView} className="bg-white/85 shadow-xs dark:bg-gray-900/85" />
           </div>
 
-          {tool === "calibrate" && (
-            <p role="status" className="absolute left-1/2 top-3 -translate-x-1/2 rounded-lg bg-gray-900/85 px-3 py-1.5 text-sm text-white">
-              {t("site.calibrate.hint")}
+          {toolHint && (
+            <p role="status" className="pointer-events-none absolute left-1/2 top-3 max-w-[60%] -translate-x-1/2 rounded-lg bg-gray-900/85 px-3 py-1.5 text-center text-sm text-white">
+              {toolHint}
             </p>
           )}
-          {bg && !bg.calibrated && tool !== "calibrate" && (
+          {bg && !bg.calibrated && tool.type === "select" && (
             <p role="status" className="absolute left-3 top-3 max-w-xs rounded-lg bg-warning/15 px-3 py-1.5 text-sm text-gray-900 dark:text-gray-100">
               {editable ? t("site.calibrate.missing") : t("site.calibrate.missingViewOnly")}
             </p>
@@ -264,9 +357,9 @@ export function SitePlan() {
           )}
         </div>
 
-        {editable && bg && (
+        {editable && showCanvas && (
           <aside aria-label={t("site.panel")} className="hidden w-72 shrink-0 space-y-5 overflow-y-auto lg:block">
-            <section className="space-y-3 rounded-xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-gray-900">
+            {bg && <section className="space-y-3 rounded-xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-gray-900">
               <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-50">{t("site.background.title")}</h2>
               <label className="block text-sm text-gray-700 dark:text-gray-300">
                 {t("site.background.opacity")}
@@ -305,7 +398,7 @@ export function SitePlan() {
                 <Trash2 size={16} aria-hidden="true" />
                 {t("site.background.remove")}
               </Button>
-            </section>
+            </section>}
 
             <section className="space-y-3 rounded-xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-gray-900">
               <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-50">{t("site.north.title")}</h2>
@@ -331,7 +424,7 @@ export function SitePlan() {
                     layer={layer}
                     // The background layer's lock is the background's own lock, so the
                     // layer row and the checkbox above always agree.
-                    state={layer === "background" ? { ...layerState(settings, layer), locked: bg.locked } : layerState(settings, layer)}
+                    state={layer === "background" ? { ...layerState(settings, layer), locked: bg?.locked ?? false } : layerState(settings, layer)}
                     onChange={(l, updates) => {
                       if (l === "background" && updates.locked !== undefined) updateSiteBackground({ locked: updates.locked });
                       else setSiteLayer(l, updates);
@@ -352,6 +445,40 @@ export function SitePlan() {
     </div>
   );
 
+}
+
+function SelectionInfo({ element, editable, onDelete, onClose }: {
+  element: SiteElement;
+  editable: boolean;
+  onDelete: () => void;
+  onClose: () => void;
+}) {
+  const { t, i18n } = useTranslation();
+  const type = elementType(element.kind);
+  const Icon = type.icon;
+  const area = shapeArea(element.shape);
+  const length = shapeLength(element.shape);
+  const num = (v: number, digits: number) => new Intl.NumberFormat(i18n.language, { maximumFractionDigits: digits }).format(v);
+  const isLine = element.shape.type === "polyline";
+
+  return (
+    <div
+      role="region"
+      aria-label={t("site.element.info")}
+      className="absolute bottom-14 left-1/2 flex w-[min(22rem,calc(100%-1.5rem))] -translate-x-1/2 items-start gap-3 rounded-xl bg-white/95 p-3 text-sm shadow-md ring-1 ring-gray-200 dark:bg-gray-900/95 dark:ring-white/10"
+    >
+      <Icon size={20} aria-hidden="true" className="mt-0.5 shrink-0 text-gray-500 dark:text-gray-400" />
+      <div className="min-w-0 flex-1">
+        <p className="font-medium text-gray-900 dark:text-gray-50">{element.name || t(type.labelKey)}</p>
+        <p className="tabular-nums text-gray-600 dark:text-gray-300">
+          {area !== null && <>{t("site.element.area", { value: num(area, area < 10 ? 1 : 0) })} · </>}
+          {t(isLine ? "site.element.length" : "site.element.perimeter", { value: formatLength(length, i18n.language) })}
+        </p>
+      </div>
+      {editable && <IconButton size="sm" icon={Trash2} tone="danger" label={t("site.element.delete")} onClick={onDelete} />}
+      <IconButton size="sm" icon={X} label={t("common.close")} onClick={onClose} />
+    </div>
+  );
 }
 
 /** A switched-on toggle (hidden, locked) stands out from the default state. */

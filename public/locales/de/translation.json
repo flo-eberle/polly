@@ -2534,7 +2534,8 @@
     "empty": {
       "title": "Noch kein Lageplan",
       "description": "Importiere ein Bild deines Grundstücks, zum Beispiel einen Kartenausschnitt oder einen Katasterplan. Danach legst du den Maßstab fest.",
-      "descriptionViewOnly": "Der Lageplan wird am Computer angelegt."
+      "descriptionViewOnly": "Der Lageplan wird am Computer angelegt.",
+      "startBlank": "Ohne Bild beginnen"
     },
     "background": {
       "title": "Hintergrundbild",
@@ -2587,6 +2588,49 @@
       "show": "Ebene „{{name}}“ einblenden",
       "lock": "Ebene „{{name}}“ sperren",
       "unlock": "Ebene „{{name}}“ entsperren"
+    },
+    "tools": {
+      "label": "Werkzeuge",
+      "select": "Auswählen und verschieben",
+      "measure": "Messen",
+      "draw": "{{kind}} zeichnen",
+      "undo": "Rückgängig",
+      "redo": "Wiederholen",
+      "shape": "Form"
+    },
+    "shapes": {
+      "rect": "Rechteck",
+      "polygon": "Polygon"
+    },
+    "hints": {
+      "rect": "Von Ecke zu Ecke ziehen. Esc beendet das Werkzeug.",
+      "circle": "Vom Mittelpunkt aus ziehen. Esc beendet das Werkzeug.",
+      "polygon": "Eckpunkte klicken. Abschließen mit Klick auf den ersten Punkt, Doppelklick oder Enter. Rücktaste nimmt den letzten Punkt zurück.",
+      "polyline": "Punkte klicken. Abschließen mit Doppelklick oder Enter. Rücktaste nimmt den letzten Punkt zurück."
+    },
+    "measure": {
+      "hint": "Punkte klicken, Doppelklick oder Enter beendet die Messung. Esc löscht sie.",
+      "total": "Gesamt: {{length}}"
+    },
+    "kinds": {
+      "building": "Gebäude",
+      "surface": "Fläche",
+      "path": "Weg",
+      "bed": "Beet",
+      "tree": "Baum",
+      "shrub": "Strauch",
+      "hedge": "Hecke",
+      "fence": "Zaun",
+      "unknown": "Unbekanntes Element"
+    },
+    "element": {
+      "info": "Ausgewähltes Element",
+      "area": "{{value}} m²",
+      "perimeter": "Umfang {{value}}",
+      "length": "Länge {{value}}",
+      "delete": "Element löschen",
+      "deleteTitle": "„{{name}}“ löschen?",
+      "deleteMessage": "Das Element wird aus dem Lageplan entfernt. Mit Strg+Z holst du es zurück."
     }
   }
 }

@@ -17,6 +17,15 @@ turns that section into a version heading.
   Pan and zoom with mouse or pinch; phones show the plan read-only.
 - The background image is stored per device in IndexedDB, uploaded to the
   backend for other devices, and included in the JSON backup.
+- Drawing on the site plan: buildings, surfaces and beds as rectangles or
+  polygons, trees and shrubs as circles, paths, hedges and fences as lines.
+  Live size and area while drawing, a measuring tool, and a toolbar with undo
+  and redo (Ctrl+Z, Ctrl+Shift+Z).
+- Editing: select, move, resize and rotate rectangles, resize circles, drag
+  corners of polygons and lines, add corners from edge midpoints, remove a
+  corner with a double click, delete with confirmation. A selected element
+  shows its area and perimeter or length; on phones tapping shows the same.
+- The site plan can be started without a background image.
 
 ## [0.1.0] - 2026-11-24
 

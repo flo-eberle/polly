@@ -110,6 +110,109 @@ test.describe("site plan", () => {
   });
 });
 
+type Shape = { type: string; cx?: number; cy?: number; r?: number; w?: number; h?: number; points?: number[] };
+type Element = { id: string; kind: string; layer: string; shape: Shape };
+
+async function siteElements(page: Page): Promise<Element[]> {
+  return page.evaluate(() => {
+    const raw = localStorage.getItem("gardener-storage");
+    return raw ? (JSON.parse(raw) as { state: { siteElements: Element[] } }).state.siteElements : [];
+  });
+}
+
+test.describe("site plan drawing", () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test("draw, select, move, undo, edit corners, delete", async ({ page }) => {
+    await seed(page);
+    await page.goto("/#/site");
+    await page.getByRole("button", { name: "Ohne Bild beginnen" }).click();
+    const canvas = page.getByTestId("site-canvas");
+    await expect(canvas.locator("canvas").first()).toBeVisible();
+    const box = (await canvas.boundingBox())!;
+    const c = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    const drag = async (from: { x: number; y: number }, to: { x: number; y: number }) => {
+      await page.mouse.move(from.x, from.y);
+      await page.mouse.down();
+      await page.mouse.move(to.x, to.y, { steps: 6 });
+      await page.mouse.up();
+    };
+
+    // Building: rectangle by dragging (10 px per metre at the start: 20 m × 12 m).
+    await page.getByRole("button", { name: "Gebäude zeichnen" }).click();
+    await expect(page.getByText("Von Ecke zu Ecke ziehen.", { exact: false })).toBeVisible();
+    await drag({ x: c.x - 300, y: c.y - 200 }, { x: c.x - 100, y: c.y - 80 });
+    let els = await siteElements(page);
+    expect(els).toHaveLength(1);
+    expect(els[0]).toMatchObject({ kind: "building", layer: "buildings", shape: { type: "rect" } });
+    expect(els[0].shape.w).toBeCloseTo(20, 0);
+    expect(els[0].shape.h).toBeCloseTo(12, 0);
+    await expect(page.getByRole("region", { name: "Ausgewähltes Element" })).toContainText("240 m²");
+
+    // Surface: polygon, closed by clicking the first point.
+    await page.getByRole("button", { name: "Fläche zeichnen" }).click();
+    const poly = [{ x: c.x + 50, y: c.y - 200 }, { x: c.x + 250, y: c.y - 200 }, { x: c.x + 250, y: c.y - 50 }, { x: c.x + 50, y: c.y - 50 }];
+    for (const p of poly) await page.mouse.click(p.x, p.y);
+    await page.mouse.click(poly[0].x, poly[0].y);
+    els = await siteElements(page);
+    expect(els).toHaveLength(2);
+    expect(els[1]).toMatchObject({ kind: "surface", shape: { type: "polygon" } });
+    expect(els[1].shape.points).toHaveLength(8);
+
+    // Tree: circle dragged out from the centre (4 m radius).
+    await page.getByRole("button", { name: "Baum zeichnen" }).click();
+    await drag({ x: c.x - 200, y: c.y + 150 }, { x: c.x - 160, y: c.y + 150 });
+    // Hedge: polyline, finished with Enter.
+    await page.getByRole("button", { name: "Hecke zeichnen" }).click();
+    for (const dx of [0, 100, 200]) await page.mouse.click(c.x + dx, c.y + 200);
+    await page.keyboard.press("Enter");
+    // Path: quick clicks in different places must not finish it; a double click on the last point does.
+    await page.getByRole("button", { name: "Weg zeichnen" }).click();
+    await page.mouse.click(c.x + 300, c.y);
+    await page.mouse.click(c.x + 300, c.y + 100);
+    await page.mouse.dblclick(c.x + 380, c.y + 100);
+    const path = (await siteElements(page)).at(-1)!;
+    expect(path).toMatchObject({ kind: "path", shape: { type: "polyline" } });
+    expect(path.shape.points).toHaveLength(6);
+    await page.keyboard.press("Control+z"); // keep the expectations below simple
+
+    els = await siteElements(page);
+    expect(els.map((e) => e.kind)).toEqual(["building", "surface", "tree", "hedge"]);
+    expect(els[2].shape.r).toBeCloseTo(4, 0);
+    expect(els[3].shape.points).toHaveLength(6);
+
+    // Back to selecting; move the building and undo/redo the move.
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("button", { name: "Auswählen und verschieben" })).toHaveAttribute("aria-pressed", "true");
+    const building = { x: c.x - 200, y: c.y - 140 };
+    await page.mouse.click(building.x, building.y);
+    await drag(building, { x: building.x + 50, y: building.y });
+    const movedCx = (await siteElements(page))[0].shape.cx!;
+    expect(movedCx - els[0].shape.cx!).toBeCloseTo(5, 0);
+    await page.keyboard.press("Control+z");
+    expect((await siteElements(page))[0].shape.cx).toBeCloseTo(els[0].shape.cx!, 3);
+    await page.keyboard.press("Control+Shift+z");
+    expect((await siteElements(page))[0].shape.cx).toBeCloseTo(movedCx, 3);
+
+    // Drag a corner of the surface outwards.
+    await page.mouse.click(c.x + 150, c.y - 120);
+    await drag(poly[1], { x: poly[1].x + 50, y: poly[1].y });
+    const surface = (await siteElements(page))[1];
+    expect(surface.shape.points![2] - els[1].shape.points![2]).toBeCloseTo(5, 0);
+
+    // Delete the tree with confirmation.
+    await page.mouse.click(c.x - 200, c.y + 150);
+    await expect(page.getByRole("region", { name: "Ausgewähltes Element" })).toContainText("Baum");
+    await page.keyboard.press("Delete");
+    await page.getByRole("alertdialog").getByRole("button", { name: "Löschen" }).click();
+    expect((await siteElements(page)).map((e) => e.kind)).toEqual(["building", "surface", "hedge"]);
+
+    await page.reload();
+    await expect(page.getByTestId("site-canvas").locator("canvas").first()).toBeVisible({ timeout: 10_000 });
+    expect(await siteElements(page)).toHaveLength(3);
+  });
+});
+
 test.describe("site plan on a phone", () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
 

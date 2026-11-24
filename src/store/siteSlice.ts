@@ -18,7 +18,9 @@ export interface SiteSlice {
   setSiteBackground: (background: SiteBackground | undefined) => void;
   updateSiteBackground: (updates: Partial<SiteBackground>) => void;
   setSiteLayer: (layer: SiteLayerId, updates: Partial<SiteLayerState>) => void;
-  addSiteElement: (element: Omit<SiteElement, "id" | "createdAt" | "updatedAt" | "schemaVersion">) => string;
+  addSiteElement: (element: NewSiteElement) => string;
+  /** Replaces all elements at once (undo/redo). */
+  replaceSiteElements: (elements: SiteElement[]) => void;
   updateSiteElement: (id: string, updates: Partial<SiteElement>) => void;
   deleteSiteElement: (id: string) => void;
 }
@@ -33,6 +35,14 @@ const newId = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto
     ? `site-${crypto.randomUUID()}`
     : `site-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+
+export type NewSiteElement = Omit<SiteElement, "id" | "createdAt" | "updatedAt" | "schemaVersion">;
+
+/** A complete element record with id, timestamps and schema version. */
+export function newSiteElement(input: NewSiteElement): SiteElement {
+  const stamp = now();
+  return { ...input, id: newId(), createdAt: stamp, updatedAt: stamp, schemaVersion: SITE_SCHEMA_VERSION } as SiteElement;
+}
 
 export const createSiteSlice: StateCreator<SiteSlice> = (set) => {
   const patchSettings = (fn: (s: SiteSettings) => Partial<SiteSettings>) =>
@@ -63,16 +73,12 @@ export const createSiteSlice: StateCreator<SiteSlice> = (set) => {
       patchSettings((s) => ({ layers: { ...s.layers, [layer]: { ...layerState(s, layer), ...updates } } })),
 
     addSiteElement: (element) => {
-      const id = newId();
-      const stamp = now();
-      set((state) => ({
-        siteElements: [
-          ...state.siteElements,
-          { ...element, id, createdAt: stamp, updatedAt: stamp, schemaVersion: SITE_SCHEMA_VERSION } as SiteElement,
-        ],
-      }));
-      return id;
+      const created = newSiteElement(element);
+      set((state) => ({ siteElements: [...state.siteElements, created] }));
+      return created.id;
     },
+
+    replaceSiteElements: (siteElements) => set({ siteElements }),
 
     updateSiteElement: (id, updates) =>
       set((state) => ({

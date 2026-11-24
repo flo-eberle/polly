@@ -2659,7 +2659,8 @@
     "empty": {
       "title": "Pas encore de plan",
       "description": "Importez une image de votre parcelle, par exemple un extrait de carte ou un plan cadastral. Fixez ensuite l’échelle.",
-      "descriptionViewOnly": "Le plan se crée sur un ordinateur."
+      "descriptionViewOnly": "Le plan se crée sur un ordinateur.",
+      "startBlank": "Commencer sans image"
     },
     "background": {
       "title": "Image de fond",
@@ -2712,6 +2713,49 @@
       "show": "Afficher le calque « {{name}} »",
       "lock": "Verrouiller le calque « {{name}} »",
       "unlock": "Déverrouiller le calque « {{name}} »"
+    },
+    "tools": {
+      "label": "Outils",
+      "select": "Sélectionner et déplacer",
+      "measure": "Mesurer",
+      "draw": "Dessiner : {{kind}}",
+      "undo": "Annuler",
+      "redo": "Rétablir",
+      "shape": "Forme"
+    },
+    "shapes": {
+      "rect": "Rectangle",
+      "polygon": "Polygone"
+    },
+    "hints": {
+      "rect": "Faites glisser d’un coin à l’autre. Échap quitte l’outil.",
+      "circle": "Faites glisser depuis le centre. Échap quitte l’outil.",
+      "polygon": "Cliquez les sommets. Terminez en cliquant le premier point, par un double-clic ou Entrée. Retour arrière retire le dernier point.",
+      "polyline": "Cliquez les points. Terminez par un double-clic ou Entrée. Retour arrière retire le dernier point."
+    },
+    "measure": {
+      "hint": "Cliquez des points ; un double-clic ou Entrée termine la mesure. Échap l’efface.",
+      "total": "Total : {{length}}"
+    },
+    "kinds": {
+      "building": "Bâtiment",
+      "surface": "Surface",
+      "path": "Chemin",
+      "bed": "Planche",
+      "tree": "Arbre",
+      "shrub": "Arbuste",
+      "hedge": "Haie",
+      "fence": "Clôture",
+      "unknown": "Élément inconnu"
+    },
+    "element": {
+      "info": "Élément sélectionné",
+      "area": "{{value}} m²",
+      "perimeter": "Périmètre {{value}}",
+      "length": "Longueur {{value}}",
+      "delete": "Supprimer l’élément",
+      "deleteTitle": "Supprimer « {{name}} » ?",
+      "deleteMessage": "L’élément est retiré du plan. Ctrl+Z le rétablit."
     }
   }
 }
