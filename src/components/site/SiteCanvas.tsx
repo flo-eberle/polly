@@ -136,11 +136,11 @@ export const SiteCanvas = memo(function SiteCanvas({
             offsetY={(bg.heightPx * bg.metersPerPixel) / 2}
             rotation={bg.rotationDeg}
             opacity={bg.opacity}
-            draggable={editable && tool === "pan" && !bg.locked && !bgLayer.locked}
+            draggable={editable && tool === "pan" && !bg.locked}
             onDragEnd={(e) => onBackgroundMoved(e.target.x(), e.target.y())}
             onMouseEnter={(e) => {
               const stage = e.target.getStage();
-              if (stage && editable && !bg.locked && !bgLayer.locked) stage.container().style.cursor = "move";
+              if (stage && editable && !bg.locked) stage.container().style.cursor = "move";
             }}
             onMouseLeave={(e) => {
               const stage = e.target.getStage();

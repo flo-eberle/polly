@@ -2583,10 +2583,10 @@
       "lines": "Linien",
       "objects": "Objekte",
       "labels": "Beschriftung",
-      "hide": "{{name}} ausblenden",
-      "show": "{{name}} einblenden",
-      "lock": "{{name}} sperren",
-      "unlock": "{{name}} entsperren"
+      "hide": "Ebene „{{name}}“ ausblenden",
+      "show": "Ebene „{{name}}“ einblenden",
+      "lock": "Ebene „{{name}}“ sperren",
+      "unlock": "Ebene „{{name}}“ entsperren"
     }
   }
 }

@@ -2708,10 +2708,10 @@
       "lines": "Líneas",
       "objects": "Objetos",
       "labels": "Rótulos",
-      "hide": "Ocultar {{name}}",
-      "show": "Mostrar {{name}}",
-      "lock": "Bloquear {{name}}",
-      "unlock": "Desbloquear {{name}}"
+      "hide": "Ocultar la capa «{{name}}»",
+      "show": "Mostrar la capa «{{name}}»",
+      "lock": "Bloquear la capa «{{name}}»",
+      "unlock": "Desbloquear la capa «{{name}}»"
     }
   }
 }

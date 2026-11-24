@@ -87,6 +87,21 @@ test.describe("site plan", () => {
     await page.getByLabel("Norden (Grad, im Uhrzeigersinn von oben)").fill("30");
     expect((await siteSettings(page))?.northDeg).toBe(30);
 
+    // Locking the background layer is the same lock as the checkbox: no dragging, no rotating.
+    await page.getByRole("button", { name: "Ebene „Hintergrund“ sperren" }).click();
+    await expect(page.getByLabel("Hintergrund sperren")).toBeChecked();
+    await expect(page.getByLabel("Drehung (Grad, im Uhrzeigersinn)")).toBeDisabled();
+    const before = (await siteSettings(page))?.background as { x: number; y: number };
+    const centre = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    await page.mouse.move(centre.x, centre.y);
+    await page.mouse.down();
+    await page.mouse.move(centre.x + 80, centre.y + 40, { steps: 8 });
+    await page.mouse.up();
+    const after = (await siteSettings(page))?.background as { x: number; y: number };
+    expect(after).toMatchObject({ x: before.x, y: before.y });
+    await page.getByLabel("Hintergrund sperren").uncheck();
+    await expect(page.getByRole("button", { name: "Ebene „Hintergrund“ sperren" })).toBeVisible();
+
     // Image from IndexedDB, settings from localStorage: both survive a reload.
     await page.reload();
     await expect(page.getByTestId("site-canvas").locator("canvas").first()).toBeVisible({ timeout: 10_000 });

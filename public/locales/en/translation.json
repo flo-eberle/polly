@@ -2583,10 +2583,10 @@
       "lines": "Lines",
       "objects": "Objects",
       "labels": "Labels",
-      "hide": "Hide {{name}}",
-      "show": "Show {{name}}",
-      "lock": "Lock {{name}}",
-      "unlock": "Unlock {{name}}"
+      "hide": "Hide layer “{{name}}”",
+      "show": "Show layer “{{name}}”",
+      "lock": "Lock layer “{{name}}”",
+      "unlock": "Unlock layer “{{name}}”"
     }
   }
 }

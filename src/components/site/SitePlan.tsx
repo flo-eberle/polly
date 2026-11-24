@@ -326,7 +326,17 @@ export function SitePlan() {
               <h2 className="mb-2 text-sm font-semibold text-gray-900 dark:text-gray-50">{t("site.layers.title")}</h2>
               <ul className="divide-y divide-gray-100 dark:divide-white/5">
                 {SITE_LAYERS.map((layer) => (
-                  <LayerRow key={layer} layer={layer} state={layerState(settings, layer)} onChange={setSiteLayer} />
+                  <LayerRow
+                    key={layer}
+                    layer={layer}
+                    // The background layer's lock is the background's own lock, so the
+                    // layer row and the checkbox above always agree.
+                    state={layer === "background" ? { ...layerState(settings, layer), locked: bg.locked } : layerState(settings, layer)}
+                    onChange={(l, updates) => {
+                      if (l === "background" && updates.locked !== undefined) updateSiteBackground({ locked: updates.locked });
+                      else setSiteLayer(l, updates);
+                    }}
+                  />
                 ))}
               </ul>
             </section>

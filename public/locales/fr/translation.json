@@ -2708,10 +2708,10 @@
       "lines": "Lignes",
       "objects": "Objets",
       "labels": "Étiquettes",
-      "hide": "Masquer {{name}}",
-      "show": "Afficher {{name}}",
-      "lock": "Verrouiller {{name}}",
-      "unlock": "Déverrouiller {{name}}"
+      "hide": "Masquer le calque « {{name}} »",
+      "show": "Afficher le calque « {{name}} »",
+      "lock": "Verrouiller le calque « {{name}} »",
+      "unlock": "Déverrouiller le calque « {{name}} »"
     }
   }
 }
