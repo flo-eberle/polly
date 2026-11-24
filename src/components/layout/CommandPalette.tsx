@@ -183,7 +183,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
       })),
       {
         id: "action:backup", group: "actions", label: t("shell.command.backup"), icon: Download,
-        keywords: "export json", run: () => { close(); exportAllData(); toast(t("dataManagement.exportSuccess"), "success"); },
+        keywords: "export json", run: () => { close(); void exportAllData(); toast(t("dataManagement.exportSuccess"), "success"); },
       },
       {
         id: "action:theme", group: "actions", label: t(dark ? "shell.command.lightMode" : "shell.command.darkMode"),

@@ -2,6 +2,8 @@ import { useStore } from "@/store";
 import { clampHouseholdSize, useAnalysisPrefs } from "@/store/analysisPrefs";
 import type { ProductType } from "@/types/animal";
 import type { GardenerExport } from "./dataExport";
+import { BLOB_ID, dataUrlToBlob, putBlob } from "./blobStore";
+import { defaultSiteSettings, type SiteSettings } from "@/types/site";
 
 export type ImportMode = "overwrite" | "merge";
 
@@ -26,6 +28,7 @@ export interface ImportResult {
     pests: number;
     waterEntries: number;
     pantryItems: number;
+    siteElements: number;
     /** 1 when analysis preferences (household size, prices) were applied. */
     analysisPrefs: number;
   };
@@ -34,7 +37,7 @@ export interface ImportResult {
 const EMPTY_STATS: ImportResult["stats"] = {
   gardens: 0, tasks: 0, harvests: 0, journalEntries: 0, expenses: 0,
   customPlants: 0, seasonArchives: 0, animals: 0, animalProducts: 0,
-  feedEntries: 0, healthEvents: 0, seeds: 0, soilTests: 0, amendments: 0, pests: 0, waterEntries: 0, pantryItems: 0, analysisPrefs: 0,
+  feedEntries: 0, healthEvents: 0, seeds: 0, soilTests: 0, amendments: 0, pests: 0, waterEntries: 0, pantryItems: 0, siteElements: 0, analysisPrefs: 0,
 };
 
 type PrefsData = NonNullable<GardenerExport["data"]["analysisPrefs"]>;
@@ -81,12 +84,36 @@ export function validateExportFile(json: unknown): json is GardenerExport {
   return true;
 }
 
+/** Writes the backup's blobs into IndexedDB. Runs in the background after an import. */
+export async function restoreBlobs(
+  blobs: Record<string, string> | undefined,
+  write: (id: string, blob: Blob) => Promise<void> = putBlob,
+): Promise<number> {
+  if (!blobs || typeof blobs !== "object") return 0;
+  let restored = 0;
+  for (const [id, dataUrl] of Object.entries(blobs)) {
+    if (!BLOB_ID.test(id) || typeof dataUrl !== "string" || !dataUrl.startsWith("data:")) continue;
+    try {
+      await write(id, dataUrlToBlob(dataUrl));
+      restored += 1;
+    } catch {
+      // One unreadable blob must not stop the others.
+    }
+  }
+  return restored;
+}
+
+function isSiteSettings(value: unknown): value is SiteSettings {
+  return !!value && typeof value === "object" && (value as { id?: unknown }).id === "site";
+}
+
 export function importAllData(
   exported: GardenerExport,
   mode: ImportMode,
 ): ImportResult {
   const store = useStore.getState();
   const { data } = exported;
+  void restoreBlobs(data.blobs);
 
   try {
     if (mode === "overwrite") {
@@ -122,6 +149,8 @@ function importOverwrite(data: GardenerExport["data"]): ImportResult {
     waterEntries: data.waterEntries ?? [],
     pantryItems: data.pantryItems ?? [],
     weatherHistory: data.weatherHistory ?? [],
+    siteSettings: isSiteSettings(data.siteSettings) ? data.siteSettings : defaultSiteSettings(),
+    siteElements: Array.isArray(data.siteElements) ? data.siteElements : [],
   });
 
   // Import settings
@@ -162,6 +191,7 @@ function importOverwrite(data: GardenerExport["data"]): ImportResult {
       pests: data.pests?.length ?? 0,
       waterEntries: data.waterEntries?.length ?? 0,
       pantryItems: data.pantryItems?.length ?? 0,
+      siteElements: Array.isArray(data.siteElements) ? data.siteElements.length : 0,
       analysisPrefs: importPrefsOverwrite(data.analysisPrefs),
     },
   };
@@ -196,6 +226,12 @@ function importMerge(
   const mergedPests = mergeById(current.pests, data.pests ?? []);
   const mergedWaterEntries = mergeById(current.waterEntries, data.waterEntries ?? []);
   const mergedPantryItems = mergeById(current.pantryItems, data.pantryItems ?? []);
+  const mergedSiteElements = mergeById(current.siteElements, Array.isArray(data.siteElements) ? data.siteElements : []);
+  // The plan's settings come over only if this device has no background of its own yet.
+  const mergedSiteSettings =
+    !current.siteSettings.background && isSiteSettings(data.siteSettings) && data.siteSettings.background
+      ? data.siteSettings
+      : current.siteSettings;
 
   // Season archives: merge by gardenId+season combo
   const existingArchiveKeys = new Set(
@@ -230,6 +266,8 @@ function importMerge(
     pests: mergedPests,
     waterEntries: mergedWaterEntries,
     pantryItems: mergedPantryItems,
+    siteElements: mergedSiteElements,
+    siteSettings: mergedSiteSettings,
     seasonArchives: mergedArchives,
     weatherHistory: mergedWeather,
   });
@@ -254,6 +292,7 @@ function importMerge(
       pests: mergedPests.length - current.pests.length,
       waterEntries: mergedWaterEntries.length - current.waterEntries.length,
       pantryItems: mergedPantryItems.length - current.pantryItems.length,
+      siteElements: mergedSiteElements.length - current.siteElements.length,
       analysisPrefs: importPrefsMerge(data.analysisPrefs),
     },
   };

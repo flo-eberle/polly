@@ -65,6 +65,7 @@
     "sectionNav": "Sections de {{section}}",
     "nav": {
       "today": "Aujourd’hui",
+      "site": "Terrain",
       "planner": "Plan du jardin",
       "plants": "Plantes",
       "calendar": "Calendrier",
@@ -2648,5 +2649,69 @@
     "surplusNote_one": "Au-delà des besoins d’une personne, non compté : {{items}}.",
     "surplusNote_other": "Au-delà des besoins de {{count}} personnes, non compté : {{items}}.",
     "surplusNote_many": "Au-delà des besoins de {{count}} personnes, non compté : {{items}}."
+  },
+  "site": {
+    "title": "Plan du terrain",
+    "subtitle": "Vue de dessus de la parcelle, à l’échelle. Importez une image de fond, fixez l’échelle, orientez vers le nord.",
+    "subtitleViewOnly": "Vue de dessus de la parcelle. La modification se fait sur un ordinateur.",
+    "panel": "Réglages du plan",
+    "fit": "Afficher tout le plan",
+    "empty": {
+      "title": "Pas encore de plan",
+      "description": "Importez une image de votre parcelle, par exemple un extrait de carte ou un plan cadastral. Fixez ensuite l’échelle.",
+      "descriptionViewOnly": "Le plan se crée sur un ordinateur."
+    },
+    "background": {
+      "title": "Image de fond",
+      "import": "Importer une image",
+      "replace": "Remplacer l’image",
+      "replaceTitle": "Remplacer l’image de fond ?",
+      "replaceMessage": "La nouvelle image remplace l’actuelle. Vous fixez ensuite l’échelle à nouveau.",
+      "remove": "Retirer le fond",
+      "removeTitle": "Retirer l’image de fond ?",
+      "removeMessage": "L’image est retirée du plan. Les éléments dessinés restent.",
+      "imported": "Image importée. Fixez maintenant l’échelle.",
+      "importFailed": "L’image n’a pas pu être lue.",
+      "missing": "L’image de fond n’est pas sur cet appareil et n’a pas pu être chargée depuis le serveur.",
+      "opacity": "Opacité",
+      "rotation": "Rotation (degrés, sens horaire)",
+      "lock": "Verrouiller le fond",
+      "scale": "Échelle : 1 pixel = {{value}}",
+      "notCalibrated": "Échelle pas encore fixée."
+    },
+    "calibrate": {
+      "action": "Fixer l’échelle",
+      "hint": "Cliquez sur le début et la fin d’une distance connue.",
+      "missing": "Échelle pas encore fixée : cliquez sur « Fixer l’échelle » et tracez une distance connue.",
+      "missingViewOnly": "L’échelle n’est pas encore fixée.",
+      "title": "Longueur de la distance",
+      "measured": "Tracé : {{length}} à l’échelle précédente.",
+      "length": "Longueur réelle en mètres",
+      "lengthHint": "Par exemple 5 pour une barre d’échelle de 5 m.",
+      "apply": "Appliquer l’échelle",
+      "done": "Échelle fixée : la distance mesure {{length}}."
+    },
+    "north": {
+      "title": "Nord",
+      "short": "N",
+      "label": "Nord : {{deg}} degrés dans le sens horaire depuis le haut",
+      "input": "Nord (degrés, sens horaire depuis le haut)",
+      "hint": "0 = le nord est en haut. Nécessaire pour les ombres."
+    },
+    "layers": {
+      "title": "Calques",
+      "background": "Fond",
+      "surfaces": "Surfaces",
+      "buildings": "Bâtiments",
+      "beds": "Planches",
+      "woody": "Arbres et arbustes",
+      "lines": "Lignes",
+      "objects": "Objets",
+      "labels": "Étiquettes",
+      "hide": "Masquer le calque « {{name}} »",
+      "show": "Afficher le calque « {{name}} »",
+      "lock": "Verrouiller le calque « {{name}} »",
+      "unlock": "Déverrouiller le calque « {{name}} »"
+    }
   }
 }

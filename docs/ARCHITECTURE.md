@@ -18,6 +18,7 @@ rules in [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md).
 │        ├──► file mirror                       (native, lib/nativeStorage.ts)  │
 │        │                                                                      │
 │  IndexedDB "gardener-photos": journal photos (lib/photoStore.ts)              │
+│  IndexedDB "gardener-blobs": site plan background (lib/blobStore.ts)          │
 │                                                                               │
 │  useBackendSync ──► lib/sync (only when a backend URL is set)                 │
 └────────────────────────────────────┬──────────────────────────────────────────┘
@@ -46,6 +47,7 @@ own). The backend only adds sync between devices.
 | State | `src/store/` | one slice per domain, combined in `store/index.ts` |
 | Logic | `src/lib/` | pure functions (sufficiency, succession, weather alerts, sync, export/import, …), unit-tested |
 | Types | `src/types/` | data model per domain |
+| Site plan | `src/components/site/`, `src/lib/siteGeometry.ts`, `src/lib/siteImage.ts`, `src/lib/blobStore.ts` | Konva canvas, lazy-loaded; plan coordinates in metres (x right, y down), north in `siteSettings.northDeg` |
 | Static data | `src/data/` | plant catalogue (`plants.json`), families, guilds |
 | Translations | `public/locales/{de,en,es,fr}/` | loaded over HTTP by i18next; German is the default |
 
@@ -64,8 +66,9 @@ own). The backend only adds sync between devices.
 ### Backup
 
 Settings → Data exports a JSON file with all collections (`lib/dataExport.ts`)
-and imports it as overwrite or merge (`lib/dataImport.ts`). Journal photos are
-not part of the backup yet.
+and imports it as overwrite or merge (`lib/dataImport.ts`). Blobs the records
+point to (the site plan background) travel along as data URLs under
+`data.blobs`. Journal photos are not part of the backup yet.
 
 ## Sync
 

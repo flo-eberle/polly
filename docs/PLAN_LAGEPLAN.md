@@ -124,8 +124,11 @@ herauszulösen ist ein späterer, eigener Schritt.
 - **Ebenen für Nutzer** sind Groups im Inhalts-Layer: Flächen, Gebäude, Beete,
   Gehölze, Linien, Objekte, Beschriftung. Jede Ebene ist ein- und ausblendbar und
   sperrbar.
-- **Einheiten:** Alles wird in **Metern** gespeichert, in Weltkoordinaten mit
-  +x = Osten und +y = Norden. Nur die Darstellung kippt die y-Achse.
+- **Einheiten:** Alles wird in **Metern** gespeichert, in Plankoordinaten mit
+  x nach rechts und y nach unten, wie im Bild und auf dem Bildschirm. Wo Norden
+  liegt, steht einmal in `northDeg`; der Schattenwurf rechnet damit in
+  Himmelsrichtungen um. (Geändert bei der Umsetzung von Phase 1: Eine gekippte
+  y-Achse hätte Bilder und Beschriftungen auf den Kopf gestellt.)
 - **Hintergrundbild:** liegt in IndexedDB und wird über den Blob-Endpunkt
   synchronisiert. Beim Import wird es auf höchstens ~4096 px verkleinert.
 
@@ -280,7 +283,7 @@ Nicht geplant ist eine echte 3D-Ansicht.
 | Phase | Inhalt |
 |---|---|
 | 0 | Sync pro Eintrag: `records`, `/api/changes`, Blob-Endpunkt, Übernahme alter Snapshots, Tests — **umgesetzt** (Branch `feat/record-sync`) |
-| 1 | Lageplan-Grundgerüst: Route `/site`, Sidebar „Grundstück“, Verschieben und Zoomen, Hintergrund importieren, kalibrieren, verschieben und drehen, Nordrichtung, Raster und Maßstab, Ebenen-Panel, Store/Export/Import |
+| 1 | **umgesetzt** (#11) — Lageplan-Grundgerüst: Route `/site`, Sidebar „Grundstück“, Verschieben und Zoomen, Hintergrund importieren, kalibrieren, verschieben und drehen, Nordrichtung, Raster und Maßstab, Ebenen-Panel, Store/Export/Import |
 | 2 | Zeichnen und Attribute: Polygon, Rechteck, Kreis, Linie; Transformieren und Eckpunkte; Eigenschaften-Panel aus der Registry; Status-Ansichten; Fläche und Länge; Messwerkzeug; Rückgängig; Löschen mit Bestätigung; am Handy nur Ansicht |
 | 3 | Bibliothek: Palette, generierte Symbole, Flächenmuster |
 | 4 | Schatten: SunCalc, Schatten-Layer, Zeitregler |

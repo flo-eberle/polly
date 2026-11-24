@@ -65,6 +65,7 @@
     "sectionNav": "Secciones de {{section}}",
     "nav": {
       "today": "Hoy",
+      "site": "Terreno",
       "planner": "Planificador",
       "plants": "Plantas",
       "calendar": "Calendario",
@@ -2648,5 +2649,69 @@
     "surplusNote_one": "Por encima de lo que necesita una persona, sin contar: {{items}}.",
     "surplusNote_other": "Por encima de lo que necesitan {{count}} personas, sin contar: {{items}}.",
     "surplusNote_many": "Por encima de lo que necesitan {{count}} personas, sin contar: {{items}}."
+  },
+  "site": {
+    "title": "Plano del terreno",
+    "subtitle": "Vista en planta de la parcela, a escala. Importa una imagen de fondo, fija la escala y oriéntala al norte.",
+    "subtitleViewOnly": "Vista en planta de la parcela. Se edita en un ordenador.",
+    "panel": "Ajustes del plano",
+    "fit": "Mostrar todo el plano",
+    "empty": {
+      "title": "Aún no hay plano",
+      "description": "Importa una imagen de tu parcela, por ejemplo un recorte de mapa o un plano catastral. Después fija la escala.",
+      "descriptionViewOnly": "El plano se crea en un ordenador."
+    },
+    "background": {
+      "title": "Imagen de fondo",
+      "import": "Importar imagen",
+      "replace": "Sustituir imagen",
+      "replaceTitle": "¿Sustituir la imagen de fondo?",
+      "replaceMessage": "La nueva imagen sustituye a la actual. Después vuelves a fijar la escala.",
+      "remove": "Quitar fondo",
+      "removeTitle": "¿Quitar la imagen de fondo?",
+      "removeMessage": "La imagen se quita del plano. Los elementos dibujados se mantienen.",
+      "imported": "Imagen importada. Ahora fija la escala.",
+      "importFailed": "No se pudo leer la imagen.",
+      "missing": "La imagen de fondo no está en este dispositivo y no se pudo cargar del servidor.",
+      "opacity": "Opacidad",
+      "rotation": "Rotación (grados, sentido horario)",
+      "lock": "Bloquear fondo",
+      "scale": "Escala: 1 píxel = {{value}}",
+      "notCalibrated": "Escala aún sin fijar."
+    },
+    "calibrate": {
+      "action": "Fijar escala",
+      "hint": "Haz clic en el inicio y el final de una distancia que conozcas.",
+      "missing": "Escala aún sin fijar: haz clic en «Fijar escala» y traza una distancia conocida.",
+      "missingViewOnly": "La escala aún no está fijada.",
+      "title": "Longitud de la distancia",
+      "measured": "Dibujado: {{length}} con la escala anterior.",
+      "length": "Longitud real en metros",
+      "lengthHint": "Por ejemplo 5 para una barra de escala de 5 m.",
+      "apply": "Aplicar escala",
+      "done": "Escala fijada: la distancia mide {{length}}."
+    },
+    "north": {
+      "title": "Norte",
+      "short": "N",
+      "label": "Norte: {{deg}} grados en sentido horario desde arriba",
+      "input": "Norte (grados, sentido horario desde arriba)",
+      "hint": "0 = el norte está arriba. Necesario para las sombras."
+    },
+    "layers": {
+      "title": "Capas",
+      "background": "Fondo",
+      "surfaces": "Superficies",
+      "buildings": "Edificios",
+      "beds": "Bancales",
+      "woody": "Árboles y arbustos",
+      "lines": "Líneas",
+      "objects": "Objetos",
+      "labels": "Rótulos",
+      "hide": "Ocultar la capa «{{name}}»",
+      "show": "Mostrar la capa «{{name}}»",
+      "lock": "Bloquear la capa «{{name}}»",
+      "unlock": "Desbloquear la capa «{{name}}»"
+    }
   }
 }

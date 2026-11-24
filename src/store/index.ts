@@ -16,9 +16,10 @@ import { createPestSlice, type PestSlice } from "./pestSlice";
 import { createWaterSlice, type WaterSlice } from "./waterSlice";
 import { createLivestockSlice, type LivestockSlice } from "./livestockSlice";
 import { createPantrySlice, type PantrySlice } from "./pantrySlice";
+import { createSiteSlice, type SiteSlice } from "./siteSlice";
 import type { Garden, SeasonArchive } from "@/types/garden";
 
-export type AppStore = SettingsSlice & GardenSlice & TaskSlice & HarvestSlice & JournalSlice & WeatherSlice & CustomPlantsSlice & ExpenseSlice & SeedSlice & SoilSlice & PestSlice & WaterSlice & LivestockSlice & PantrySlice & {
+export type AppStore = SettingsSlice & GardenSlice & TaskSlice & HarvestSlice & JournalSlice & WeatherSlice & CustomPlantsSlice & ExpenseSlice & SeedSlice & SoilSlice & PestSlice & WaterSlice & LivestockSlice & PantrySlice & SiteSlice & {
   seasonArchives: SeasonArchive[];
   archiveSeason: (gardenId: string) => void;
 };
@@ -34,6 +35,7 @@ const PERSISTED_KEYS = [
   "soilTests", "amendments", "pests", "waterEntries", "animals",
   "animalProducts", "feedEntries", "healthEvents", "pantryItems",
   "customPlants", "seasonArchives", "weatherHistory", "activeGardenId",
+  "siteSettings", "siteElements",
   // Einstellungen
   "locale", "weatherApiKey", "locationLat", "locationLon", "locationName", "locationRegion",
   "lastFrostDate", "gridCellSizeCm", "backendUrl", "theme", "alerts",
@@ -57,6 +59,7 @@ export const useStore = create<AppStore>()(
       ...createWaterSlice(...a),
       ...createLivestockSlice(...a),
       ...createPantrySlice(...a),
+      ...createSiteSlice(...a),
       seasonArchives: [],
       archiveSeason: (gardenId: string) => {
         const [set, get] = [a[0], a[1]];

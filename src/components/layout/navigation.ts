@@ -1,7 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Sun, LayoutGrid, Sprout, CalendarDays, Apple, BookOpen, Archive, Bird,
-  Bean, FlaskConical, Bug, Droplets, Scale, Wallet, Settings,
+  Bean, FlaskConical, Bug, Droplets, Scale, Wallet, Settings, Map as MapIcon,
 } from "lucide-react";
 
 /**
@@ -10,7 +10,7 @@ import {
  * from here, so a page can never be reachable in one place and missing in
  * another.
  *
- * 14 labelled entries. Related pages that used to be separate sidebar items
+ * 15 labelled entries. Related pages that used to be separate sidebar items
  * (companions, tasks, livestock sub-pages, food plan, weather) are now tabs
  * of their section (`SECTIONS`); their URLs stay unchanged.
  */
@@ -40,6 +40,7 @@ export const NAV_GROUPS: NavGroup[] = [
     id: "garden",
     labelKey: "shell.group.garden",
     items: [
+      { id: "site", to: "/site", icon: MapIcon, labelKey: "shell.nav.site" },
       { id: "planner", to: "/planner", icon: LayoutGrid, labelKey: "shell.nav.planner" },
       { id: "plants", to: "/plants", icon: Sprout, labelKey: "shell.nav.plants" },
       { id: "calendar", to: "/calendar", icon: CalendarDays, labelKey: "shell.nav.calendar" },
