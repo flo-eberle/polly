@@ -31,7 +31,7 @@ export function DataManagement() {
   const [pending, setPending] = useState<GardenerExport | null>(null);
 
   const handleExportAll = () => {
-    exportAllData();
+    void exportAllData();
     toast(t("dataManagement.exportSuccess"), "success");
   };
 

@@ -69,7 +69,11 @@ const SETTINGS = {
 };
 
 function device(initial: Item = {}) {
-  let state: Item & { syncBase: SyncBase | null } = { ...SETTINGS, harvests: [], gardens: [], seasonArchives: [], syncBase: null, ...initial };
+  let state: Item & { syncBase: SyncBase | null } = {
+    ...SETTINGS, harvests: [], gardens: [], seasonArchives: [], siteElements: [],
+    siteSettings: { id: "site", northDeg: 0, updatedAt: "1970-01-01T00:00:00.000Z", schemaVersion: 1 },
+    syncBase: null, ...initial,
+  };
   const store: SyncStore = {
     getState: () => state,
     setState: (partial) => {
@@ -239,6 +243,25 @@ describe("sync rounds between two devices", () => {
     expect(result.pushed).toBe(1);
     await runSyncRound(b.store, URL_, "full", server.fetchFn);
     expect(b.state.harvests).toEqual([h("1", 777)]);
+  });
+
+  it("syncs the site plan settings and its elements", async () => {
+    const server = fakeBackend();
+    const a = device();
+    const b = device();
+    await runSyncRound(a.store, URL_, "full", server.fetchFn);
+    await runSyncRound(b.store, URL_, "full", server.fetchFn);
+
+    a.set({
+      siteSettings: { id: "site", northDeg: 12, background: { imageId: "site-bg-1" }, updatedAt: "2026-11-24T00:00:00.000Z", schemaVersion: 1 },
+      siteElements: [{ id: "e1", kind: "tree", layer: "woody" }],
+    });
+    await runSyncRound(a.store, URL_, "push", server.fetchFn);
+    await runSyncRound(b.store, URL_, "full", server.fetchFn);
+
+    expect((b.state.siteSettings as Item).northDeg).toBe(12);
+    expect(ids(b.state.siteElements)).toEqual(["e1"]);
+    expect(server.rows.has("siteSettings/site")).toBe(true);
   });
 
   it("leaves the base untouched when the backend is unreachable", async () => {

@@ -65,6 +65,7 @@
     "sectionNav": "Bereiche von {{section}}",
     "nav": {
       "today": "Heute",
+      "site": "Grundstück",
       "planner": "Planer",
       "plants": "Pflanzen",
       "calendar": "Kalender",
@@ -2523,5 +2524,69 @@
     "compositionHint": "Gemüse ist kalorienarm – kalorienreiche Kulturen wie Kartoffeln heben den Garten-Anteil am stärksten (siehe Größte Hebel).",
     "surplusNote_one": "Über den Bedarf einer Person hinaus, nicht eingerechnet: {{items}}.",
     "surplusNote_other": "Über den Bedarf von {{count}} Personen hinaus, nicht eingerechnet: {{items}}."
+  },
+  "site": {
+    "title": "Grundstück",
+    "subtitle": "Lageplan in der Draufsicht, maßstabsgetreu. Hintergrundbild importieren, Maßstab festlegen, nach Norden ausrichten.",
+    "subtitleViewOnly": "Lageplan in der Draufsicht. Bearbeiten geht am Computer.",
+    "panel": "Lageplan-Einstellungen",
+    "fit": "Ganzen Plan zeigen",
+    "empty": {
+      "title": "Noch kein Lageplan",
+      "description": "Importiere ein Bild deines Grundstücks, zum Beispiel einen Kartenausschnitt oder einen Katasterplan. Danach legst du den Maßstab fest.",
+      "descriptionViewOnly": "Der Lageplan wird am Computer angelegt."
+    },
+    "background": {
+      "title": "Hintergrundbild",
+      "import": "Bild importieren",
+      "replace": "Bild ersetzen",
+      "replaceTitle": "Hintergrundbild ersetzen?",
+      "replaceMessage": "Das neue Bild ersetzt das bisherige. Den Maßstab legst du danach neu fest.",
+      "remove": "Hintergrund entfernen",
+      "removeTitle": "Hintergrundbild entfernen?",
+      "removeMessage": "Das Bild wird aus dem Lageplan entfernt. Gezeichnete Elemente bleiben erhalten.",
+      "imported": "Bild importiert. Lege jetzt den Maßstab fest.",
+      "importFailed": "Das Bild konnte nicht gelesen werden.",
+      "missing": "Das Hintergrundbild ist auf diesem Gerät nicht vorhanden und konnte nicht vom Server geladen werden.",
+      "opacity": "Deckkraft",
+      "rotation": "Drehung (Grad, im Uhrzeigersinn)",
+      "lock": "Hintergrund sperren",
+      "scale": "Maßstab: 1 Pixel = {{value}}",
+      "notCalibrated": "Maßstab noch nicht festgelegt."
+    },
+    "calibrate": {
+      "action": "Maßstab festlegen",
+      "hint": "Klicke auf Anfang und Ende einer Strecke, deren Länge du kennst.",
+      "missing": "Maßstab noch nicht festgelegt: Klicke auf „Maßstab festlegen“ und zeichne eine bekannte Strecke nach.",
+      "missingViewOnly": "Der Maßstab ist noch nicht festgelegt.",
+      "title": "Länge der Strecke",
+      "measured": "Gezeichnet: {{length}} beim bisherigen Maßstab.",
+      "length": "Tatsächliche Länge in Metern",
+      "lengthHint": "Zum Beispiel 5 für einen 5-m-Maßstabsbalken.",
+      "apply": "Maßstab übernehmen",
+      "done": "Maßstab festgelegt: Die Strecke ist {{length}} lang."
+    },
+    "north": {
+      "title": "Nordrichtung",
+      "short": "N",
+      "label": "Norden: {{deg}} Grad im Uhrzeigersinn von oben",
+      "input": "Norden (Grad, im Uhrzeigersinn von oben)",
+      "hint": "0 = Norden ist oben. Wird für den Schattenwurf gebraucht."
+    },
+    "layers": {
+      "title": "Ebenen",
+      "background": "Hintergrund",
+      "surfaces": "Flächen",
+      "buildings": "Gebäude",
+      "beds": "Beete",
+      "woody": "Gehölze",
+      "lines": "Linien",
+      "objects": "Objekte",
+      "labels": "Beschriftung",
+      "hide": "{{name}} ausblenden",
+      "show": "{{name}} einblenden",
+      "lock": "{{name}} sperren",
+      "unlock": "{{name}} entsperren"
+    }
   }
 }

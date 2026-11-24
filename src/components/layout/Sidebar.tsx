@@ -38,7 +38,7 @@ function NavItem({ item, active, onNavigate }: { item: NavEntry; active: boolean
 }
 
 /**
- * Flat, always-labelled navigation (14 entries in 4 groups). Sub-pages are
+ * Flat, always-labelled navigation (15 entries in 4 groups). Sub-pages are
  * tabs of their section (see SectionTabs), so nothing hides behind an icon.
  * Desktop: static column. Below lg: a drawer above every other layer.
  */

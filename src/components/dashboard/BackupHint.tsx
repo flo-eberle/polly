@@ -55,7 +55,7 @@ export const BackupHint = memo(function BackupHint({ now }: { now: Date }) {
   };
 
   const backup = () => {
-    exportAllData();
+    void exportAllData();
     toast(t("dataManagement.exportSuccess"), "success");
   };
 

@@ -87,6 +87,7 @@ src/
     weather/       Weather dashboard, alerts, SunlightWidget
     dashboard/     Dashboard (incl. livestock stats), PlantingAdvisor, OnboardingWizard
     settings/      SettingsPage, DataManagement (backup/restore)
+    site/          Site plan (Konva): background image, calibration, layers
     ui/            Button, Card, Modal, Input, Toast, ErrorBoundary,
                    PlantIcon (45 SVGs, cached), PlantIconDisplay (memo)
   store/           13 Zustand slices: garden, task, harvest, journal, settings,

@@ -10,6 +10,14 @@ turns that section into a version heading.
 
 ## [Unreleased]
 
+### Added
+- Site plan page (Garden → Site): import a background image such as a map
+  screenshot or cadastral plan, set its scale by tracing a known distance,
+  move, rotate, fade and lock it, set the north direction, and toggle layers.
+  Pan and zoom with mouse or pinch; phones show the plan read-only.
+- The background image is stored per device in IndexedDB, uploaded to the
+  backend for other devices, and included in the JSON backup.
+
 ## [0.1.0] - 2026-11-24
 
 First Polly release. Polly is a hard fork of

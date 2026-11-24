@@ -15,6 +15,8 @@ import type { SoilTest, Amendment } from "@/types/soil";
 import type { PestEntry } from "@/types/pest";
 import type { WaterEntry } from "@/types/water";
 import type { PantryItem } from "@/types/pantry";
+import type { SiteElement, SiteSettings } from "@/types/site";
+import { blobToDataUrl, getBlob } from "@/lib/blobStore";
 
 export interface GardenerExport {
   version: 1;
@@ -51,6 +53,11 @@ export interface GardenerExport {
       alerts: AlertConfig;
     };
     weatherHistory: WeatherHistoryEntry[];
+    /** Site plan. Missing in backups made before it existed. */
+    siteSettings?: SiteSettings;
+    siteElements?: SiteElement[];
+    /** Binary data referenced by records (site plan background), as data URLs keyed by blob id. */
+    blobs?: Record<string, string>;
     /** Analysis preferences (separate persist store). Missing in backups made before it existed. */
     analysisPrefs?: {
       householdSize: number;
@@ -96,6 +103,8 @@ export function buildExportData(): GardenerExport {
         alerts: state.alerts,
       },
       weatherHistory: state.weatherHistory,
+      siteSettings: state.siteSettings,
+      siteElements: state.siteElements,
       analysisPrefs: { householdSize: prefs.householdSize, productPrices: { ...prefs.productPrices } },
     },
   };
@@ -112,8 +121,29 @@ export function downloadJson(data: GardenerExport): void {
   URL.revokeObjectURL(url);
 }
 
-export function exportAllData(): void {
-  const data = buildExportData();
+/** Ids of all blobs the exported records point to. */
+export function referencedBlobIds(data: GardenerExport["data"]): string[] {
+  const ids = new Set<string>();
+  const bg = data.siteSettings?.background?.imageId;
+  if (bg) ids.add(bg);
+  return [...ids];
+}
+
+/** Adds the referenced blobs as data URLs; blobs missing on this device are skipped. */
+export async function attachBlobs(
+  data: GardenerExport,
+  read: (id: string) => Promise<Blob | null> = getBlob,
+): Promise<GardenerExport> {
+  const blobs: Record<string, string> = {};
+  for (const id of referencedBlobIds(data.data)) {
+    const blob = await read(id).catch(() => null);
+    if (blob) blobs[id] = await blobToDataUrl(blob);
+  }
+  return Object.keys(blobs).length > 0 ? { ...data, data: { ...data.data, blobs } } : data;
+}
+
+export async function exportAllData(): Promise<void> {
+  const data = await attachBlobs(buildExportData());
   downloadJson(data);
   // Update last backup date
   useStore.getState().setLastBackupDate(new Date().toISOString());

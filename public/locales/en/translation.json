@@ -65,6 +65,7 @@
     "sectionNav": "{{section}} sections",
     "nav": {
       "today": "Today",
+      "site": "Site",
       "planner": "Planner",
       "plants": "Plants",
       "calendar": "Calendar",
@@ -2523,5 +2524,69 @@
     "compositionHint": "Vegetables are low in calories – potatoes and squash raise the garden share most (see biggest levers).",
     "surplusNote_one": "Beyond what one person needs, not counted: {{items}}.",
     "surplusNote_other": "Beyond what {{count}} people need, not counted: {{items}}."
+  },
+  "site": {
+    "title": "Site plan",
+    "subtitle": "Top view of the property, to scale. Import a background image, set the scale, point it north.",
+    "subtitleViewOnly": "Top view of the property. Editing works on a computer.",
+    "panel": "Site plan settings",
+    "fit": "Show the whole plan",
+    "empty": {
+      "title": "No site plan yet",
+      "description": "Import an image of your property, such as a map section or a cadastral plan. Then set its scale.",
+      "descriptionViewOnly": "The site plan is set up on a computer."
+    },
+    "background": {
+      "title": "Background image",
+      "import": "Import image",
+      "replace": "Replace image",
+      "replaceTitle": "Replace the background image?",
+      "replaceMessage": "The new image replaces the current one. You set the scale again afterwards.",
+      "remove": "Remove background",
+      "removeTitle": "Remove the background image?",
+      "removeMessage": "The image is removed from the site plan. Drawn elements stay.",
+      "imported": "Image imported. Now set the scale.",
+      "importFailed": "The image could not be read.",
+      "missing": "The background image is not on this device and could not be loaded from the server.",
+      "opacity": "Opacity",
+      "rotation": "Rotation (degrees, clockwise)",
+      "lock": "Lock background",
+      "scale": "Scale: 1 pixel = {{value}}",
+      "notCalibrated": "Scale not set yet."
+    },
+    "calibrate": {
+      "action": "Set scale",
+      "hint": "Click the start and the end of a distance you know.",
+      "missing": "Scale not set yet: click “Set scale” and trace a known distance.",
+      "missingViewOnly": "The scale is not set yet.",
+      "title": "Length of the distance",
+      "measured": "Drawn: {{length}} at the previous scale.",
+      "length": "Actual length in metres",
+      "lengthHint": "For example 5 for a 5 m scale bar.",
+      "apply": "Apply scale",
+      "done": "Scale set: the distance is {{length}} long."
+    },
+    "north": {
+      "title": "North",
+      "short": "N",
+      "label": "North: {{deg}} degrees clockwise from up",
+      "input": "North (degrees, clockwise from up)",
+      "hint": "0 = north is up. Needed for shadows."
+    },
+    "layers": {
+      "title": "Layers",
+      "background": "Background",
+      "surfaces": "Surfaces",
+      "buildings": "Buildings",
+      "beds": "Beds",
+      "woody": "Trees and shrubs",
+      "lines": "Lines",
+      "objects": "Objects",
+      "labels": "Labels",
+      "hide": "Hide {{name}}",
+      "show": "Show {{name}}",
+      "lock": "Lock {{name}}",
+      "unlock": "Unlock {{name}}"
+    }
   }
 }

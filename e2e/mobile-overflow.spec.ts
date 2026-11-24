@@ -11,7 +11,7 @@ import { readFileSync } from "node:fs";
 const demoState = JSON.parse(readFileSync(new URL("./fixtures/demo-state.json", import.meta.url), "utf8")) as Record<string, unknown>;
 
 const ROUTES = [
-  "/", "/weather", "/planner", "/planner?bed=b-hochbeet", "/plants", "/plants?plant=tomato", "/companions",
+  "/", "/weather", "/site", "/planner", "/planner?bed=b-hochbeet", "/plants", "/plants?plant=tomato", "/companions",
   "/calendar", "/tasks", "/harvest", "/journal", "/pantry", "/seeds", "/soil", "/pests", "/water-log",
   "/livestock", "/livestock/a1", "/livestock/production", "/livestock/feed", "/livestock/health",
   "/sufficiency", "/foodplan", "/expenses", "/settings", "/import",

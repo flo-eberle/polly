@@ -37,6 +37,7 @@ function lazyRetry<T extends Record<string, unknown>>(
 }
 
 const GardenPlanner = lazy(() => lazyRetry(() => import("@/components/planner/GardenPlanner")).then((m) => ({ default: m.GardenPlanner })));
+const SitePlan = lazy(() => lazyRetry(() => import("@/components/site/SitePlan")).then((m) => ({ default: m.SitePlan })));
 const PlantList = lazy(() => lazyRetry(() => import("@/components/plants/PlantList")).then((m) => ({ default: m.PlantList })));
 const CalendarPage = lazy(() => lazyRetry(() => import("@/components/calendar/CalendarPage")).then((m) => ({ default: m.CalendarPage })));
 const TaskCalendar = lazy(() => lazyRetry(() => import("@/components/calendar/TaskCalendar")).then((m) => ({ default: m.TaskCalendar })));
@@ -93,6 +94,7 @@ export default function App() {
       <Routes>
         <Route element={<AppShell />}>
           <Route index element={<Dashboard />} />
+          <Route path="site" element={<L><SitePlan /></L>} />
           <Route path="planner" element={<L><GardenPlanner /></L>} />
           <Route path="plants" element={<L><PlantList /></L>} />
           <Route path="plants/:id" element={<PlantRedirect />} />

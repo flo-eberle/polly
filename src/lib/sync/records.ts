@@ -17,8 +17,14 @@ export const SYNCED_COLLECTIONS = [
   "gardens", "tasks", "harvests", "journalEntries", "expenses", "seeds",
   "soilTests", "amendments", "pests", "waterEntries", "animals",
   "animalProducts", "feedEntries", "healthEvents", "pantryItems",
-  "customPlants", "seasonArchives",
+  "customPlants", "seasonArchives", "siteElements",
 ] as const;
+
+/**
+ * Store fields that hold a single object, synced as one record each:
+ * collection = field name, fixed id.
+ */
+export const SYNCED_OBJECTS = [{ field: "siteSettings", id: "site" }] as const;
 
 export type SyncedCollection = (typeof SYNCED_COLLECTIONS)[number];
 
@@ -106,6 +112,11 @@ export function collectLocalRecords(state: State): Map<string, LocalRecord> {
       records.set(recordKey(collection, id), { collection, id, data: item, hash: hashRecord(item) });
     }
   }
+  for (const { field, id } of SYNCED_OBJECTS) {
+    const value = state[field];
+    if (!value || typeof value !== "object" || Array.isArray(value)) continue;
+    records.set(recordKey(field, id), { collection: field, id, data: value as Item, hash: hashRecord(value) });
+  }
   const settings = settingsRecord(state);
   records.set(recordKey(SETTINGS_COLLECTION, SETTINGS_ID), {
     collection: SETTINGS_COLLECTION,
@@ -127,8 +138,9 @@ export function diffAgainstBase(local: Map<string, LocalRecord>, base: Record<st
   for (const key of Object.keys(base)) {
     if (local.has(key)) continue;
     const slash = key.indexOf("/");
-    // The settings record is never deleted; a device without it simply has defaults.
-    if (key.slice(0, slash) === SETTINGS_COLLECTION) continue;
+    // Settings and single objects are never deleted; a device without them has defaults.
+    const collection = key.slice(0, slash);
+    if (collection === SETTINGS_COLLECTION || isObjectCollection(collection)) continue;
     changes.push({ collection: key.slice(0, slash), id: key.slice(slash + 1), deleted: true });
   }
   return changes;
@@ -143,6 +155,10 @@ export function baseAfterPush(base: Record<string, string>, pushed: Change[]): R
     else next[key] = hashRecord(change.data);
   }
   return next;
+}
+
+function isObjectCollection(collection: string): boolean {
+  return SYNCED_OBJECTS.some((o) => o.field === collection);
 }
 
 export interface RemoteChange {
@@ -175,6 +191,7 @@ export function applyRemoteChanges(
   const local = collectLocalRecords(state);
   const collections = new Map<string, Item[]>();
   let settings: Item | null = null;
+  const objects: Record<string, Item> = {};
 
   const itemsOf = (collection: string): Item[] => {
     let items = collections.get(collection);
@@ -191,13 +208,14 @@ export function applyRemoteChanges(
     const dirty = mine ? base[key] !== mine.hash : key in base;
     const known = (SYNCED_COLLECTIONS as readonly string[]).includes(change.collection);
     const isSettings = change.collection === SETTINGS_COLLECTION && change.id === SETTINGS_ID;
+    const isObject = SYNCED_OBJECTS.some((o) => o.field === change.collection && o.id === change.id);
     // A collection this version of the app does not know yet: leave it alone.
-    if (!known && !isSettings) continue;
+    if (!known && !isSettings && !isObject) continue;
 
     if (change.deleted) {
       if (dirty && mine) continue; // edited here after the deletion; the edit wins
       delete hashes[key];
-      if (!mine || isSettings) continue;
+      if (!mine || isSettings || isObject) continue;
       const items = itemsOf(change.collection);
       const index = items.findIndex((item) => recordId(change.collection, item) === change.id);
       if (index >= 0) items.splice(index, 1);
@@ -217,13 +235,17 @@ export function applyRemoteChanges(
       settings = change.data;
       continue;
     }
+    if (isObject) {
+      objects[change.collection] = change.data;
+      continue;
+    }
     const items = itemsOf(change.collection);
     const index = items.findIndex((item) => recordId(change.collection, item) === change.id);
     if (index >= 0) items[index] = change.data;
     else items.push(change.data);
   }
 
-  const updates: State = Object.fromEntries(collections);
+  const updates: State = { ...Object.fromEntries(collections), ...objects };
   if (settings) {
     for (const key of SYNCED_SETTINGS) {
       const value = settings[key];
