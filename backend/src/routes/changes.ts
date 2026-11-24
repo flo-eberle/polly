@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { Router } from "express";
 import { z } from "zod";
 import { currentRevision, getDb } from "../db.js";
@@ -11,9 +12,16 @@ import { currentRevision, getDb } from "../db.js";
  *
  * Record contents are stored verbatim: the frontend owns their shape, and a
  * field this server does not know about must survive the round trip.
+ *
+ * The epoch changes with every start of the server. Revisions are only
+ * comparable within one epoch: after the database was restored from a backup,
+ * a device's last revision may point past the restored state. A device that
+ * sees a new epoch therefore joins afresh (GET ?since=0&tombstones=1) and
+ * pushes back whatever the server lost.
  */
 
 const router = Router();
+export const EPOCH = randomUUID();
 
 const NAME = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/;
 
@@ -53,16 +61,19 @@ router.get("/", (req, res) => {
   }
 
   const db = getDb();
-  // A first pull needs no tombstones: there is nothing on the device to delete.
+  // A first pull needs no tombstones unless asked for: a new device has nothing
+  // to delete, but a device rejoining after a restore does.
+  const withTombstones = since > 0 || req.query.tombstones === "1";
   const rows = db
     .prepare(
-      since === 0
-        ? "SELECT * FROM records WHERE deleted = 0 ORDER BY version"
-        : "SELECT * FROM records WHERE version > ? ORDER BY version",
+      withTombstones
+        ? "SELECT * FROM records WHERE version > ? ORDER BY version"
+        : "SELECT * FROM records WHERE deleted = 0 ORDER BY version",
     )
-    .all(...(since === 0 ? [] : [since])) as RecordRow[];
+    .all(...(withTombstones ? [since] : [])) as RecordRow[];
 
   res.json({
+    epoch: EPOCH,
     rev: currentRevision(db),
     changes: rows.map((r) => ({
       collection: r.collection,
@@ -108,7 +119,7 @@ router.post("/", (req, res) => {
     return version;
   })();
 
-  res.json({ rev });
+  res.json({ epoch: EPOCH, rev });
 });
 
 export default router;

@@ -21,6 +21,7 @@ type Item = Record<string, unknown>;
 function fakeBackend() {
   const rows = new Map<string, { collection: string; id: string; data: Item | null; version: number; deleted: boolean }>();
   let rev = 0;
+  let epoch = "epoch-1";
   const fetchFn = (async (input: string, init?: RequestInit) => {
     const url = new URL(input);
     if (init?.method === "POST") {
@@ -36,16 +37,30 @@ function fakeBackend() {
           deleted: !!c.deleted,
         });
       }
-      return new Response(JSON.stringify({ rev }));
+      return new Response(JSON.stringify({ epoch, rev }));
     }
     const since = Number(url.searchParams.get("since") ?? 0);
+    const tombstones = since > 0 || url.searchParams.get("tombstones") === "1";
     const changes = [...rows.values()]
-      .filter((r) => (since === 0 ? !r.deleted : r.version > since))
+      .filter((r) => (tombstones ? r.version > since : !r.deleted))
       .sort((a, b) => a.version - b.version)
       .map((r) => ({ collection: r.collection, id: r.id, version: r.version, ...(r.deleted ? { deleted: true } : { data: r.data }) }));
-    return new Response(JSON.stringify({ rev, changes }));
+    return new Response(JSON.stringify({ epoch, rev, changes }));
   }) as typeof fetch;
-  return { fetchFn, rows };
+  /** Simulates restoring the database from a backup taken earlier. */
+  const snapshot = () => {
+    const saved = { rows: new Map([...rows].map(([k, v]) => [k, { ...v }])), rev };
+    return () => {
+      rows.clear();
+      for (const [k, v] of saved.rows) rows.set(k, v);
+      rev = saved.rev;
+      epoch = `epoch-${Math.random()}`; // a restore always comes with a restart
+    };
+  };
+  const restart = () => {
+    epoch = `epoch-${Math.random()}`;
+  };
+  return { fetchFn, rows, snapshot, restart };
 }
 
 const SETTINGS = {
@@ -184,6 +199,46 @@ describe("sync rounds between two devices", () => {
     await runSyncRound(a.store, "http://other", "full", second.fetchFn);
     expect(second.rows.has("harvests/1")).toBe(true);
     expect(a.state.syncBase?.backendUrl).toBe("http://other");
+  });
+
+  it("joins afresh after the server database was restored from a backup", async () => {
+    const server = fakeBackend();
+    const a = device({ harvests: [h("1")] });
+    const b = device();
+    await runSyncRound(a.store, URL_, "full", server.fetchFn);
+    const restore = server.snapshot();
+
+    a.set({ harvests: [h("1"), h("after-backup")] });
+    await runSyncRound(a.store, URL_, "push", server.fetchFn);
+    restore(); // server loses "after-backup" and goes back to an older revision
+
+    // b writes on the restored server; a must still see it.
+    await runSyncRound(b.store, URL_, "full", server.fetchFn);
+    b.set({ harvests: [...(b.state.harvests as Item[]), h("from-b")] });
+    await runSyncRound(b.store, URL_, "push", server.fetchFn);
+
+    await runSyncRound(a.store, URL_, "full", server.fetchFn);
+    expect(ids(a.state.harvests)).toEqual(["1", "after-backup", "from-b"]);
+    expect(server.rows.has("harvests/after-backup")).toBe(true);
+  });
+
+  it("survives a plain server restart without resurrecting or losing anything", async () => {
+    const server = fakeBackend();
+    const a = device({ harvests: [h("1"), h("2")] });
+    const b = device();
+    await runSyncRound(a.store, URL_, "full", server.fetchFn);
+    await runSyncRound(b.store, URL_, "full", server.fetchFn);
+
+    b.set({ harvests: [h("1")] }); // b deletes 2
+    await runSyncRound(b.store, URL_, "push", server.fetchFn);
+    a.set({ harvests: [h("1", 777), h("2")] }); // a edits 1 offline
+    server.restart();
+
+    const result = await runSyncRound(a.store, URL_, "full", server.fetchFn);
+    expect(a.state.harvests).toEqual([h("1", 777)]);
+    expect(result.pushed).toBe(1);
+    await runSyncRound(b.store, URL_, "full", server.fetchFn);
+    expect(b.state.harvests).toEqual([h("1", 777)]);
   });
 
   it("leaves the base untouched when the backend is unreachable", async () => {

@@ -20,6 +20,7 @@ async function push(changes: unknown[]) {
 async function pull(since: number) {
   const res = await fetch(`${server.url}/api/changes?since=${since}`);
   return (await res.json()) as {
+    epoch: string;
     rev: number;
     changes: Array<{ collection: string; id: string; version: number; deleted?: true; data?: Record<string, unknown> }>;
   };
@@ -27,7 +28,10 @@ async function pull(since: number) {
 
 describe("/api/changes", () => {
   it("starts empty", async () => {
-    assert.deepEqual(await pull(0), { rev: 0, changes: [] });
+    const empty = await pull(0);
+    assert.equal(empty.rev, 0);
+    assert.deepEqual(empty.changes, []);
+    assert.match(empty.epoch, /^[0-9a-f-]{36}$/);
   });
 
   it("hands out increasing revisions and returns only newer records", async () => {
@@ -62,6 +66,11 @@ describe("/api/changes", () => {
 
     const fresh = await pull(0);
     assert.equal(fresh.changes.some((c) => c.id === "h2"), false);
+
+    const rejoin = (await (await fetch(`${server.url}/api/changes?since=0&tombstones=1`)).json()) as {
+      changes: Array<{ id: string; deleted?: true }>;
+    };
+    assert.equal(rejoin.changes.find((c) => c.id === "h2")?.deleted, true);
   });
 
   it("brings a deleted record back when it is written again", async () => {

@@ -11,6 +11,22 @@ Polly is a hard fork of [Gardener](https://github.com/mniedermaier/gardener) (re
 - Pull upstream changes with `git fetch upstream && git merge upstream/main`.
 - Goals, planned changes and the plant-data decision (Permapeople) are in `docs/ROADMAP.md`. Read it before planning features.
 
+## Workflow
+
+- Never push to `main`; it is protected by a ruleset. Branch (`feat/…`,
+  `fix/…`, `docs/…`, `chore/…`), open a PR, wait for CI.
+- Everything on GitHub (PR titles and bodies, issues, comments, commit
+  messages, new docs) is in English. Conventional Commits for messages and PR
+  titles.
+- Every PR with user-visible changes adds them under `## [Unreleased]` in
+  `CHANGELOG.md`.
+- Squash-merge normal PRs; merge upstream syncs with a merge commit.
+- Releases, versioning (SemVer, currently 0.x) and API compatibility rules:
+  `docs/RELEASING.md`. Environments, backup and updates: `docs/DEPLOYMENT.md`.
+  Code overview: `docs/ARCHITECTURE.md`.
+- `gh` defaults to `flo-eberle/polly` (`gh repo set-default`); without it, it
+  targets the upstream repo.
+
 ## Tech Stack
 
 - **Frontend:** React 19 + Vite + TypeScript + Tailwind CSS 3
@@ -33,12 +49,14 @@ Polly is a hard fork of [Gardener](https://github.com/mniedermaier/gardener) (re
 npm run dev          # Dev server (localhost:5173)
 npm run build        # TypeScript check + Vite production build
 npm run lint         # oxlint (correctness + jsx-a11y + react-hooks)
-npm run test         # Unit tests (Vitest, 143 tests)
+npm run test         # Unit tests (Vitest)
 npm run test:coverage # Unit tests with coverage report
-npm run test:e2e     # E2E tests (Playwright, 8 tests)
+npm run test:e2e     # E2E tests (Playwright)
 npm run preview      # Preview production build
 
-docker compose up --build  # Docker (localhost:8080)
+docker compose up --build  # Docker (localhost:8080; 8090 locally via override)
+(cd backend && npm test)   # Backend tests (node:test)
+npm run version:set -- 0.2.0  # Set the release version everywhere
 
 npm run build:native # Web build + cap sync into android/ and ios/
 npm run cap:android  # Open in Android Studio (needs JDK 21 + SDK)
@@ -81,9 +99,9 @@ src/
                    weatherAlerts, sufficiency (monthly, plants + livestock),
                    sunlight, succession, sharing, iCal, dataExport/Import, advisor, theme
   hooks/           usePlants, usePlantName, useBackendSync, useUndo
-  test/            23 test suites, 143 tests (incl. i18n integrity, component tests)
+  test/            Vitest suites (incl. i18n integrity, component tests, sync)
 public/locales/    Translation JSON files (de/, en/, es/, fr/)
-e2e/               8 Playwright E2E tests
+e2e/               Playwright E2E tests
 backend/           Express + SQLite (Docker only)
 ```
 
@@ -133,6 +151,9 @@ backend/           Express + SQLite (Docker only)
   instead of vanishing. Never bypass it with a direct `localStorage.setItem`.
 - New persisted fields must be added to `PERSISTED_KEYS` in `store/index.ts`,
   otherwise they are silently dropped by `partialize`.
+- New synced collections go into `SYNCED_COLLECTIONS` in `lib/sync/records.ts`.
+  Records must have a string `id`; new fields are optional with a default, and
+  nothing may drop fields it does not know (sync, backend, export, import).
 - On native the first store read may be asynchronous (file mirror, see
   `lib/nativeStorage.ts`); `main.tsx` gates `App` on `persist.hasHydrated()`.
 

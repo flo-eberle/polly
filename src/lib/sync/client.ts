@@ -4,6 +4,7 @@ import {
   collectLocalRecords,
   diffAgainstBase,
   initialBase,
+  rejoinBase,
   type Change,
   type RemoteChange,
   type SyncBase,
@@ -30,12 +31,13 @@ export interface SyncRoundResult {
 const PUSH_BATCH = 500;
 
 interface PullResponse {
+  epoch?: string;
   rev: number;
   changes: RemoteChange[];
 }
 
-async function pull(fetchFn: typeof fetch, url: string, since: number): Promise<PullResponse> {
-  const res = await fetchFn(`${url}/api/changes?since=${since}`);
+async function pull(fetchFn: typeof fetch, url: string, since: number, tombstones = false): Promise<PullResponse> {
+  const res = await fetchFn(`${url}/api/changes?since=${since}${tombstones ? "&tombstones=1" : ""}`);
   if (!res.ok) throw new Error(`pull responded ${res.status}`);
   return (await res.json()) as PullResponse;
 }
@@ -70,28 +72,47 @@ export async function runSyncRound(
     // First contact with this backend: join both sides before anything is pushed.
     const remote = await pull(fetchFn, backendUrl, 0);
     const { updates, hashes } = initialBase(store.getState(), remote.changes);
-    base = { backendUrl, rev: remote.rev, hashes };
+    base = { backendUrl, epoch: remote.epoch, rev: remote.rev, hashes };
     store.setState({ ...updates, syncBase: base });
     pulled += remote.changes.length;
   }
 
+  let pushed = await pushChanges(store, backendUrl, base, fetchFn);
+
+  if (mode === "full" || pushed > 0) {
+    base = store.getState().syncBase ?? base;
+    const remote = await pull(fetchFn, backendUrl, base.rev);
+
+    if (remote.epoch !== base.epoch) {
+      // The server restarted, maybe on a restored database: revisions from
+      // before are not comparable. Rejoin from its complete state.
+      const full = await pull(fetchFn, backendUrl, 0, true);
+      const current: SyncBase = store.getState().syncBase ?? base;
+      const { updates, hashes } = rejoinBase(store.getState(), current.hashes, full.changes);
+      store.setState({ ...updates, syncBase: { backendUrl, epoch: full.epoch, rev: full.rev, hashes } });
+      pulled += full.changes.length;
+      pushed += await pushChanges(store, backendUrl, store.getState().syncBase!, fetchFn);
+      return { pushed, pulled };
+    }
+
+    const current: SyncBase = store.getState().syncBase ?? base;
+    const { updates, hashes } = applyRemoteChanges(store.getState(), current.hashes, remote.changes);
+    store.setState({ ...updates, syncBase: { backendUrl, epoch: remote.epoch, rev: remote.rev, hashes } });
+    pulled += remote.changes.length;
+  }
+
+  return { pushed, pulled };
+}
+
+/** Pushes everything that differs from the base, in batches. */
+async function pushChanges(store: SyncStore, backendUrl: string, base: SyncBase, fetchFn: typeof fetch): Promise<number> {
   const changes = diffAgainstBase(collectLocalRecords(store.getState()), base.hashes);
   for (let i = 0; i < changes.length; i += PUSH_BATCH) {
     const batch = changes.slice(i, i + PUSH_BATCH);
     await push(fetchFn, backendUrl, batch);
-    // Re-read: a pull from another round must not be overwritten.
+    // Re-read: another round may have moved the base meanwhile.
     const current: SyncBase = store.getState().syncBase ?? base;
-    base = { ...current, hashes: baseAfterPush(current.hashes, batch) };
-    store.setState({ syncBase: base });
+    store.setState({ syncBase: { ...current, hashes: baseAfterPush(current.hashes, batch) } });
   }
-
-  if (mode === "full" || changes.length > 0) {
-    const remote = await pull(fetchFn, backendUrl, base.rev);
-    const current: SyncBase = store.getState().syncBase ?? base;
-    const { updates, hashes } = applyRemoteChanges(store.getState(), current.hashes, remote.changes);
-    store.setState({ ...updates, syncBase: { backendUrl, rev: remote.rev, hashes } });
-    pulled += remote.changes.length;
-  }
-
-  return { pushed: changes.length, pulled };
+  return changes.length;
 }
