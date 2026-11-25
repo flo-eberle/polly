@@ -2758,12 +2758,65 @@
       "length": "Longueur {{value}}",
       "delete": "Supprimer l’élément",
       "deleteTitle": "Supprimer « {{name}} » ?",
-      "deleteMessage": "L’élément est retiré du plan. Ctrl+Z le rétablit."
+      "deleteMessage": "L’élément est retiré du plan. Ctrl+Z le rétablit.",
+      "properties": "Propriétés",
+      "planted": "planté en {{year}}"
     },
     "variants": {
       "greenhouse": "Serre",
       "compost": "Compost",
       "wall": "Mur"
+    },
+    "fields": {
+      "name": "Nom",
+      "variant": "Type",
+      "status": "Statut",
+      "plannedYear": "Prévu pour (année)",
+      "height": "Hauteur",
+      "heightHint": "Pour les ombres.",
+      "notes": "Notes",
+      "crownDiameter": "Diamètre de la couronne",
+      "width": "Largeur",
+      "species": "Espèce",
+      "speciesHint": "Par exemple pommier, noisetier, charme.",
+      "variety": "Variété",
+      "usage": "Usage",
+      "plantedYear": "Année de plantation",
+      "matureHeight": "Hauteur adulte",
+      "matureCrown": "Diamètre adulte de la couronne",
+      "material": "Matériau",
+      "depth": "Profondeur",
+      "none": "Non indiqué",
+      "defaultValue": "Sans indication : {{value}} m.",
+      "invalidNumber": "Saisissez un nombre entre {{min}} et {{max}}."
+    },
+    "status": {
+      "existing": "Existant",
+      "planned": "Prévu",
+      "remove": "À retirer"
+    },
+    "usage": {
+      "harvest": "Récolte",
+      "ornamental": "Ornement",
+      "privacy": "Brise-vue",
+      "wildlife": "Oiseaux et insectes"
+    },
+    "materials": {
+      "lawn": "Pelouse",
+      "paving": "Pavés",
+      "gravel": "Gravier",
+      "concrete": "Béton",
+      "asphalt": "Asphalte",
+      "decking": "Terrasse bois",
+      "soil": "Terre",
+      "mulch": "Paillis d’écorce",
+      "other": "Autre"
+    },
+    "views": {
+      "label": "Vue",
+      "all": "Tout",
+      "current": "Actuel",
+      "target": "Cible"
     }
   }
 }

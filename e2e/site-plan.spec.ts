@@ -147,7 +147,7 @@ test.describe("site plan drawing", () => {
     expect(els[0]).toMatchObject({ kind: "building", layer: "buildings", shape: { type: "rect" } });
     expect(els[0].shape.w).toBeCloseTo(20, 0);
     expect(els[0].shape.h).toBeCloseTo(12, 0);
-    await expect(page.getByRole("region", { name: "Ausgewähltes Element" })).toContainText("240 m²");
+    await expect(page.getByRole("region", { name: "Eigenschaften" })).toContainText("240 m²");
 
     // Surface: polygon, closed by clicking the first point.
     await page.getByRole("button", { name: "Fläche zeichnen" }).click();
@@ -202,7 +202,7 @@ test.describe("site plan drawing", () => {
 
     // Delete the tree with confirmation.
     await page.mouse.click(c.x - 200, c.y + 150);
-    await expect(page.getByRole("region", { name: "Ausgewähltes Element" })).toContainText("Baum");
+    await expect(page.getByRole("region", { name: "Eigenschaften" })).toContainText("Baum");
     await page.keyboard.press("Delete");
     await page.getByRole("alertdialog").getByRole("button", { name: "Löschen" }).click();
     expect((await siteElements(page)).map((e) => e.kind)).toEqual(["building", "surface", "hedge"]);
@@ -232,7 +232,7 @@ test.describe("site plan variants", () => {
     await page.getByRole("button", { name: "Gebäude zeichnen" }).click();
     await page.getByRole("group", { name: "Art" }).getByRole("button", { name: "Gewächshaus" }).click();
     await drag([-200, -150], [-100, -100]);
-    await expect(page.getByRole("region", { name: "Ausgewähltes Element" })).toContainText("Gewächshaus");
+    await expect(page.getByRole("region", { name: "Eigenschaften" })).toContainText("Gewächshaus");
 
     await page.getByRole("button", { name: "Zaun zeichnen" }).click();
     await page.getByRole("group", { name: "Art" }).getByRole("button", { name: "Mauer" }).click();
@@ -254,8 +254,87 @@ test.describe("site plan variants", () => {
   });
 });
 
+test.describe("site plan properties", () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test("edit attributes, undo typing as one step, filter by status", async ({ page }) => {
+    await seed(page);
+    await page.goto("/#/site");
+    await page.getByRole("button", { name: "Ohne Bild beginnen" }).click();
+    const box = (await page.getByTestId("site-canvas").boundingBox())!;
+    const c = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+
+    await page.getByRole("button", { name: "Baum zeichnen" }).click();
+    await page.mouse.move(c.x, c.y);
+    await page.mouse.down();
+    await page.mouse.move(c.x + 20, c.y, { steps: 4 });
+    await page.mouse.up();
+
+    const panel = page.getByRole("region", { name: "Eigenschaften" });
+    await expect(panel).toBeVisible();
+    await panel.getByLabel("Name").fill("Apfel am Tor");
+    await panel.getByLabel("Pflanzenart").fill("Apfel");
+    await panel.getByLabel("Sorte").fill("Topaz");
+    await panel.getByLabel("Ernte").check();
+    await panel.getByLabel("Status").selectOption("planned");
+    await panel.getByLabel("Geplant für (Jahr)").fill("2027");
+    await panel.getByLabel("Kronendurchmesser (m)", { exact: true }).fill("6");
+
+    let tree = (await siteElements(page))[0] as Element & Record<string, unknown>;
+    expect(tree).toMatchObject({
+      name: "Apfel am Tor", speciesText: "Apfel", variety: "Topaz", usage: ["harvest"], status: "planned", plannedYear: 2027,
+      shape: { type: "circle", r: 3 },
+    });
+
+    // Typing into one field is one undo step: undo the crown, then the year.
+    await page.getByRole("button", { name: "Rückgängig" }).click();
+    tree = (await siteElements(page))[0] as Element & Record<string, unknown>;
+    expect(tree.shape.r).toBe(2);
+    expect(tree.plannedYear).toBe(2027);
+    await page.getByRole("button", { name: "Rückgängig" }).click();
+    tree = (await siteElements(page))[0] as Element & Record<string, unknown>;
+    expect(tree.plannedYear).toBeUndefined();
+    await page.getByRole("button", { name: "Wiederholen" }).click();
+    await expect(panel.getByLabel("Geplant für (Jahr)")).toHaveValue("2027");
+
+    // "Ist" hides planned elements (and with them the selection); "Ziel" shows them.
+    const views = page.getByRole("radiogroup", { name: "Ansicht" });
+    await views.getByRole("radio", { name: "Ist" }).click();
+    await expect(panel).toBeHidden();
+    await views.getByRole("radio", { name: "Ziel" }).click();
+    await page.mouse.click(c.x, c.y);
+    await expect(panel).toBeVisible();
+  });
+});
+
 test.describe("site plan on a phone", () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+  test("shows details of a tapped element read-only", async ({ page }) => {
+    const tree = {
+      id: "site-tree-1", kind: "tree", layer: "woody", shape: { type: "circle", cx: 0, cy: 0, r: 3 },
+      name: "Apfel am Tor", speciesText: "Apfel", variety: "Topaz", usage: ["harvest"], status: "planned", plannedYear: 2027,
+      createdAt: "2026-11-25T00:00:00.000Z", updatedAt: "2026-11-25T00:00:00.000Z", schemaVersion: 1,
+    };
+    await page.route(/open-meteo\.com|openweathermap\.org/, (r) => r.abort());
+    await page.addInitScript(([state, el]) => {
+      if (sessionStorage.getItem("__seeded")) return;
+      sessionStorage.setItem("__seeded", "1");
+      localStorage.clear();
+      localStorage.setItem("gardener-storage", JSON.stringify({ state: { ...state, siteElements: [el] }, version: 4 }));
+    }, [demoState, tree] as const);
+    await page.goto("/#/site");
+    const canvas = page.getByTestId("site-canvas");
+    await expect(canvas.locator("canvas").first()).toBeVisible({ timeout: 10_000 });
+    const box = (await canvas.boundingBox())!;
+    await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+    const info = page.getByRole("region", { name: "Ausgewähltes Element" });
+    await expect(info).toContainText("Apfel am Tor");
+    await expect(info).toContainText("Geplant 2027");
+    await expect(info).toContainText("Apfel Topaz");
+    await expect(info).toContainText("Ernte");
+    await expect(info.getByRole("button", { name: "Element löschen" })).toHaveCount(0);
+  });
 
   test("is view only", async ({ page }) => {
     await seed(page);

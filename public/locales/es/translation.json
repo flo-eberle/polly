@@ -2758,12 +2758,65 @@
       "length": "Longitud {{value}}",
       "delete": "Eliminar elemento",
       "deleteTitle": "¿Eliminar «{{name}}»?",
-      "deleteMessage": "El elemento se quita del plano. Ctrl+Z lo recupera."
+      "deleteMessage": "El elemento se quita del plano. Ctrl+Z lo recupera.",
+      "properties": "Propiedades",
+      "planted": "plantado en {{year}}"
     },
     "variants": {
       "greenhouse": "Invernadero",
       "compost": "Compost",
       "wall": "Muro"
+    },
+    "fields": {
+      "name": "Nombre",
+      "variant": "Tipo",
+      "status": "Estado",
+      "plannedYear": "Previsto para (año)",
+      "height": "Altura",
+      "heightHint": "Para las sombras.",
+      "notes": "Notas",
+      "crownDiameter": "Diámetro de copa",
+      "width": "Anchura",
+      "species": "Especie",
+      "speciesHint": "Por ejemplo manzano, avellano, carpe.",
+      "variety": "Variedad",
+      "usage": "Uso",
+      "plantedYear": "Año de plantación",
+      "matureHeight": "Altura final",
+      "matureCrown": "Diámetro de copa final",
+      "material": "Material",
+      "depth": "Profundidad",
+      "none": "Sin indicar",
+      "defaultValue": "Sin indicar se usan {{value}} m.",
+      "invalidNumber": "Introduce un número entre {{min}} y {{max}}."
+    },
+    "status": {
+      "existing": "Existente",
+      "planned": "Previsto",
+      "remove": "Se quitará"
+    },
+    "usage": {
+      "harvest": "Cosecha",
+      "ornamental": "Ornamental",
+      "privacy": "Pantalla visual",
+      "wildlife": "Aves e insectos"
+    },
+    "materials": {
+      "lawn": "Césped",
+      "paving": "Adoquín",
+      "gravel": "Grava",
+      "concrete": "Hormigón",
+      "asphalt": "Asfalto",
+      "decking": "Tarima",
+      "soil": "Tierra",
+      "mulch": "Corteza",
+      "other": "Otro"
+    },
+    "views": {
+      "label": "Vista",
+      "all": "Todo",
+      "current": "Actual",
+      "target": "Objetivo"
     }
   }
 }

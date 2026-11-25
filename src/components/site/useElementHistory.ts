@@ -15,9 +15,17 @@ export function useElementHistory() {
   // Mirrors the stack sizes for rendering; the stacks themselves live in refs.
   const [counts, setCounts] = useState({ past: 0, future: 0 });
 
-  const commit = useCallback((next: SiteElement[]) => {
+  const lastKey = useRef<string | null>(null);
+
+  /**
+   * Stores `next` and remembers what it replaced. Consecutive commits with the
+   * same `coalesceKey` (typing into one field) form a single undo step.
+   */
+  const commit = useCallback((next: SiteElement[], coalesceKey?: string) => {
     const { siteElements, replaceSiteElements } = useStore.getState();
-    past.current = [...past.current.slice(-(LIMIT - 1)), siteElements];
+    const coalesce = coalesceKey !== undefined && coalesceKey === lastKey.current && past.current.length > 0;
+    lastKey.current = coalesceKey ?? null;
+    if (!coalesce) past.current = [...past.current.slice(-(LIMIT - 1)), siteElements];
     future.current = [];
     replaceSiteElements(next);
     setCounts({ past: past.current.length, future: future.current.length });
@@ -26,6 +34,7 @@ export function useElementHistory() {
   const undo = useCallback(() => {
     const previous = past.current.pop();
     if (!previous) return;
+    lastKey.current = null;
     const { siteElements, replaceSiteElements } = useStore.getState();
     future.current = [...future.current, siteElements];
     replaceSiteElements(previous);
@@ -35,6 +44,7 @@ export function useElementHistory() {
   const redo = useCallback(() => {
     const next = future.current.pop();
     if (!next) return;
+    lastKey.current = null;
     const { siteElements, replaceSiteElements } = useStore.getState();
     past.current = [...past.current, siteElements];
     replaceSiteElements(next);

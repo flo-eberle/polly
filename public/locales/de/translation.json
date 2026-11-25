@@ -2633,12 +2633,65 @@
       "length": "Länge {{value}}",
       "delete": "Element löschen",
       "deleteTitle": "„{{name}}“ löschen?",
-      "deleteMessage": "Das Element wird aus dem Lageplan entfernt. Mit Strg+Z holst du es zurück."
+      "deleteMessage": "Das Element wird aus dem Lageplan entfernt. Mit Strg+Z holst du es zurück.",
+      "properties": "Eigenschaften",
+      "planted": "gepflanzt {{year}}"
     },
     "variants": {
       "greenhouse": "Gewächshaus",
       "compost": "Kompost",
       "wall": "Mauer"
+    },
+    "fields": {
+      "name": "Name",
+      "variant": "Art",
+      "status": "Status",
+      "plannedYear": "Geplant für (Jahr)",
+      "height": "Höhe",
+      "heightHint": "Für den Schattenwurf.",
+      "notes": "Notizen",
+      "crownDiameter": "Kronendurchmesser",
+      "width": "Breite",
+      "species": "Pflanzenart",
+      "speciesHint": "Zum Beispiel Apfel, Haselnuss, Hainbuche.",
+      "variety": "Sorte",
+      "usage": "Nutzung",
+      "plantedYear": "Pflanzjahr",
+      "matureHeight": "Endhöhe",
+      "matureCrown": "Endgültiger Kronendurchmesser",
+      "material": "Material",
+      "depth": "Tiefe",
+      "none": "Nicht angegeben",
+      "defaultValue": "Ohne Angabe gilt {{value}} m.",
+      "invalidNumber": "Bitte eine Zahl zwischen {{min}} und {{max}} eingeben."
+    },
+    "status": {
+      "existing": "Vorhanden",
+      "planned": "Geplant",
+      "remove": "Wird entfernt"
+    },
+    "usage": {
+      "harvest": "Ernte",
+      "ornamental": "Zierde",
+      "privacy": "Sichtschutz",
+      "wildlife": "Vögel und Insekten"
+    },
+    "materials": {
+      "lawn": "Rasen",
+      "paving": "Pflaster",
+      "gravel": "Kies",
+      "concrete": "Beton",
+      "asphalt": "Asphalt",
+      "decking": "Holzdeck",
+      "soil": "Erde",
+      "mulch": "Rindenmulch",
+      "other": "Anderes"
+    },
+    "views": {
+      "label": "Ansicht",
+      "all": "Alles",
+      "current": "Ist",
+      "target": "Ziel"
     }
   }
 }

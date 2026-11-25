@@ -61,6 +61,9 @@ export interface SiteSettings {
   schemaVersion: number;
 }
 
+export type SiteStatus = "existing" | "planned" | "remove";
+export type SiteUsage = "harvest" | "ornamental" | "privacy" | "wildlife";
+
 export type SiteShape =
   | { type: "polygon"; points: number[] }
   | { type: "rect"; cx: number; cy: number; w: number; h: number; rotationDeg: number }
@@ -79,7 +82,7 @@ export interface SiteElement {
   variant?: string;
   layer: SiteLayerId;
   shape: SiteShape;
-  status?: "existing" | "planned" | "remove";
+  status?: SiteStatus;
   plannedYear?: number;
   name?: string;
   notes?: string;
@@ -88,6 +91,18 @@ export interface SiteElement {
   baseElevationM?: number;
   z?: number;
   locked?: boolean;
+  // Kind-specific attributes (see components/site/elementFields.ts). All optional.
+  /** Woody plants: species as free text until the plant catalogue covers trees. */
+  speciesText?: string;
+  variety?: string;
+  usage?: SiteUsage[];
+  plantedYear?: number;
+  matureHeightM?: number;
+  matureCrownDiameterM?: number;
+  /** Surfaces and paths. */
+  material?: string;
+  /** Ponds. */
+  depthM?: number;
   createdAt: string;
   updatedAt: string;
   schemaVersion: number;

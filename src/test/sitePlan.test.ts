@@ -34,7 +34,10 @@ import {
   translateShape,
   unionBounds,
 } from "@/lib/siteShapes";
-import { ELEMENT_TYPES, elementType, elementVariant, resolvedType } from "@/components/site/elementTypes";
+import { ELEMENT_TYPES, MATERIAL_COLORS, elementType, elementVariant, resolvedType } from "@/components/site/elementTypes";
+import { fieldUpdates, fieldValue, fieldsFor } from "@/components/site/elementFields";
+import { isVisibleInView } from "@/components/site/siteView";
+import { readFileSync } from "node:fs";
 import { act, renderHook } from "@testing-library/react";
 import { newSiteElement, normalizeDeg } from "@/store/siteSlice";
 import { useElementHistory } from "@/components/site/useElementHistory";
@@ -345,6 +348,12 @@ describe("element registry", () => {
     expect(elementVariant("tree", undefined)).toBeNull();
   });
 
+  it("colours surfaces and paths by material", () => {
+    expect(resolvedType({ kind: "surface", material: "lawn" }).style.fill).toBe(MATERIAL_COLORS.lawn);
+    expect(resolvedType({ kind: "path", material: "gravel" }).style.stroke).toBe(MATERIAL_COLORS.gravel);
+    expect(resolvedType({ kind: "surface", material: "other" }).style.fill).toBe(elementType("surface").style.fill);
+  });
+
   it("falls back for kinds written by a newer version", () => {
     expect(elementType("future-kind").kind).toBe("unknown");
     expect(elementType("tree").layer).toBe("woody");
@@ -376,5 +385,89 @@ describe("element history", () => {
     expect(result.current.canRedo).toBe(false);
     act(() => result.current.undo());
     expect(useStore.getState().siteElements).toEqual([a]);
+  });
+});
+
+describe("element fields", () => {
+  const tree = newSiteElement({ kind: "tree", layer: "woody", shape: { type: "circle", cx: 0, cy: 0, r: 2 } });
+  const keys = (kind: string) => fieldsFor(kind).map((f) => f.key);
+
+  it("lists common fields around the kind's own, with the variant only where there are variants", () => {
+    expect(keys("tree")).toEqual(["name", "status", "plannedYear", "speciesText", "variety", "usage", "plantedYear", "crownDiameterM", "matureHeightM", "matureCrownDiameterM", "heightM", "notes"]);
+    expect(keys("building")).toContain("variant");
+    expect(keys("tree")).not.toContain("variant");
+    expect(keys("future-kind")).toEqual(["name", "status", "plannedYear", "heightM", "notes"]);
+  });
+
+  it("shows the planned year only for planned elements", () => {
+    const planned = fieldsFor("tree").find((f) => f.key === "plannedYear")!;
+    expect(planned.visible!(tree)).toBe(false);
+    expect(planned.visible!({ ...tree, status: "planned" })).toBe(true);
+  });
+
+  it("edits the crown through the circle and the width through the line", () => {
+    const crown = fieldsFor("tree").find((f) => f.key === "crownDiameterM")!;
+    expect(fieldValue(crown, tree)).toBe(4);
+    expect(fieldUpdates(crown, tree, 6)).toEqual({ shape: { type: "circle", cx: 0, cy: 0, r: 3 } });
+    expect(fieldUpdates(crown, tree, 0)).toEqual({});
+
+    const hedge = newSiteElement({ kind: "hedge", layer: "woody", shape: { type: "polyline", points: [0, 0, 5, 0], width: 1 } });
+    const width = fieldsFor("hedge").find((f) => f.key === "lineWidthM")!;
+    expect(fieldValue(width, hedge)).toBe(1);
+    expect(fieldUpdates(width, hedge, 1.5)).toEqual({ shape: { type: "polyline", points: [0, 0, 5, 0], width: 1.5 } });
+  });
+
+  it("removes a value instead of storing an empty one", () => {
+    const name = fieldsFor("tree")[0];
+    expect(fieldUpdates(name, tree, "")).toEqual({ name: undefined });
+    const usage = fieldsFor("tree").find((f) => f.key === "usage")!;
+    expect(fieldUpdates(usage, tree, [])).toEqual({ usage: undefined });
+    expect(fieldUpdates(usage, tree, ["harvest"])).toEqual({ usage: ["harvest"] });
+    expect(fieldValue(fieldsFor("tree")[1], tree)).toBe("existing");
+  });
+
+  it("has every label of kinds, variants and fields in all four languages", () => {
+    const labelKeys = new Set<string>();
+    for (const type of [...ELEMENT_TYPES, elementType("unknown")]) {
+      labelKeys.add(type.labelKey);
+      for (const v of type.variants ?? []) labelKeys.add(v.labelKey);
+      for (const f of fieldsFor(type.kind)) {
+        labelKeys.add(f.labelKey);
+        if (f.hintKey) labelKeys.add(f.hintKey);
+        if (f.type === "select" || f.type === "multi") for (const o of f.options) labelKeys.add(o.labelKey);
+      }
+    }
+    for (const lng of ["de", "en", "es", "fr"]) {
+      const dict = JSON.parse(readFileSync(`public/locales/${lng}/translation.json`, "utf8")) as Record<string, unknown>;
+      const missing = [...labelKeys].filter((key) => typeof key.split(".").reduce<unknown>((o, k) => (o as Record<string, unknown> | undefined)?.[k], dict) !== "string");
+      expect(missing, lng).toEqual([]);
+    }
+  });
+});
+
+describe("plan views", () => {
+  it("shows today's state and the target state", () => {
+    const of = (status?: "existing" | "planned" | "remove") => ({ status });
+    expect([of(), of("planned"), of("remove")].map((e) => isVisibleInView(e, "current"))).toEqual([true, false, true]);
+    expect([of(), of("planned"), of("remove")].map((e) => isVisibleInView(e, "target"))).toEqual([true, true, false]);
+    expect([of(), of("planned"), of("remove")].every((e) => isVisibleInView(e, "all"))).toBe(true);
+  });
+});
+
+describe("history coalescing", () => {
+  beforeEach(resetSite);
+
+  it("turns typing into one field into a single undo step", () => {
+    const { result } = renderHook(() => useElementHistory());
+    const a = newSiteElement({ kind: "tree", layer: "woody", shape: { type: "circle", cx: 0, cy: 0, r: 1 } });
+    act(() => result.current.commit([a]));
+    for (const name of ["A", "Ap", "Apf"]) act(() => result.current.commit([{ ...a, name }], "a:name"));
+    act(() => result.current.commit([{ ...a, name: "Apf", variety: "B" }], "a:variety"));
+
+    act(() => result.current.undo());
+    expect(useStore.getState().siteElements[0].name).toBe("Apf");
+    expect(useStore.getState().siteElements[0].variety).toBeUndefined();
+    act(() => result.current.undo());
+    expect(useStore.getState().siteElements[0].name).toBeUndefined();
   });
 });

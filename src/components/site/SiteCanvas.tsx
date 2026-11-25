@@ -7,7 +7,7 @@ import { distance, formatLength, gridLines, gridStep, screenToPlan, zoomAt, type
 import { pathLength, polygonArea, rectFromCorners, toFlat } from "@/lib/siteShapes";
 import { SITE_LAYERS, layerState, type SiteElement, type SiteSettings, type SiteShape } from "@/types/site";
 import { elementType, resolvedType, type ShapeType } from "./elementTypes";
-import { ELEMENT_NODE, ElementNode, SELECT_COLOR, VertexEditor } from "./SiteElements";
+import { ELEMENT_NODE, ElementNode, NameLabel, RemoveMark, SELECT_COLOR, VertexEditor } from "./SiteElements";
 import type { SiteImageState } from "./useSiteImage";
 
 export type SiteTool =
@@ -385,7 +385,7 @@ export const SiteCanvas = memo(function SiteCanvas(props: SiteCanvasProps) {
           return (
             <Group key={layer} listening={!editable || !locked}>
               {byLayer(layer).map((el) => (
-                <ElementNode
+                <ElementNodeWithMark
                   key={el.id}
                   element={el}
                   scale={view.scale}
@@ -411,6 +411,14 @@ export const SiteCanvas = memo(function SiteCanvas(props: SiteCanvasProps) {
           flipEnabled={false}
         />
       </Layer>
+
+      {layerState(settings, "labels").visible && (
+        <Layer listening={false}>
+          {visibleLayers.flatMap((layer) => byLayer(layer)).map((el) => (
+            <NameLabel key={el.id} element={el} scale={view.scale} dark={dark} />
+          ))}
+        </Layer>
+      )}
 
       <Layer listening={false}>
         {rectDraft && (
@@ -455,3 +463,13 @@ export const SiteCanvas = memo(function SiteCanvas(props: SiteCanvasProps) {
     </Stage>
   );
 });
+
+/** An element plus its removal cross, so both stay in the element's layer order. */
+function ElementNodeWithMark(props: Parameters<typeof ElementNode>[0]) {
+  return (
+    <>
+      <ElementNode {...props} />
+      {props.element.status === "remove" && <RemoveMark element={props.element} scale={props.scale} />}
+    </>
+  );
+}

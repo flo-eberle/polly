@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { Eye, EyeOff, ImagePlus, Lock, LockOpen, Map as MapIcon, Maximize, PenLine, Ruler, Trash2, X } from "lucide-react";
@@ -27,6 +27,9 @@ import { newSiteElement } from "@/store/siteSlice";
 import { SITE_LAYERS, layerState, type SiteElement, type SiteLayerId, type SiteShape } from "@/types/site";
 import { SiteCanvas, type SiteTool } from "./SiteCanvas";
 import { SiteToolbar } from "./SiteToolbar";
+import { SiteProperties } from "./SiteProperties";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { isVisibleInView, type SiteView } from "./siteView";
 import { elementType, resolvedType } from "./elementTypes";
 import { useElementHistory } from "./useElementHistory";
 import { useSiteImage } from "./useSiteImage";
@@ -67,7 +70,9 @@ export function SitePlan() {
   const [startedBlank, setStartedBlank] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const { commit, undo, redo, canUndo, canRedo } = useElementHistory();
-  const selected = elements.find((e) => e.id === selectedId) ?? null;
+  const [planView, setPlanView] = useState<SiteView>("all");
+  const shownElements = useMemo(() => elements.filter((e) => isVisibleInView(e, planView)), [elements, planView]);
+  const selected = shownElements.find((e) => e.id === selectedId) ?? null;
 
   useEffect(() => {
     const el = containerRef.current;
@@ -172,6 +177,14 @@ export function SitePlan() {
     const created = newSiteElement({ kind, ...(variant ? { variant } : {}), layer: type.layer, shape, status: "existing" });
     commit([...useStore.getState().siteElements, created]);
     setSelectedId(created.id);
+  }, [commit]);
+
+  const updateElement = useCallback((id: string, updates: Partial<SiteElement>, coalesceKey?: string) => {
+    const stamp = new Date().toISOString();
+    commit(
+      useStore.getState().siteElements.map((e) => (e.id === id ? { ...e, ...updates, id, updatedAt: stamp } : e)),
+      coalesceKey,
+    );
   }, [commit]);
 
   const changeShape = useCallback((id: string, shape: SiteShape) => {
@@ -283,7 +296,7 @@ export function SitePlan() {
               view={view}
               onViewChange={setView}
               settings={settings}
-              elements={elements}
+              elements={shownElements}
               image={image}
               editable={editable}
               tool={tool}
@@ -314,6 +327,8 @@ export function SitePlan() {
 
           {selected && (
             <SelectionInfo
+              // On wide screens the properties panel in the side bar takes over.
+              className={editable ? "lg:hidden" : ""}
               element={selected}
               editable={editable}
               onDelete={() => void deleteSelected()}
@@ -336,7 +351,22 @@ export function SitePlan() {
             <span className="tabular-nums">{formatLength(bar.meters, i18n.language)}</span>
           </div>
 
-          <div className="absolute bottom-3 right-3">
+          <div className="absolute bottom-3 right-3 flex items-center gap-2">
+            {elements.length > 0 && (
+              <SegmentedControl<SiteView>
+                label={t("site.views.label")}
+                size="sm"
+                inline
+                value={planView}
+                onChange={(v) => setPlanView(v)}
+                options={[
+                  { value: "all", label: t("site.views.all") },
+                  { value: "current", label: t("site.views.current") },
+                  { value: "target", label: t("site.views.target") },
+                ]}
+                className="bg-white/90 shadow-xs dark:bg-gray-900/90"
+              />
+            )}
             <IconButton icon={Maximize} label={t("site.fit")} onClick={fitView} className="bg-white/85 shadow-xs dark:bg-gray-900/85" />
           </div>
 
@@ -359,6 +389,13 @@ export function SitePlan() {
 
         {editable && showCanvas && (
           <aside aria-label={t("site.panel")} className="hidden w-72 shrink-0 space-y-5 overflow-y-auto lg:block">
+            {selected && (
+              <SiteProperties
+                element={selected}
+                onChange={(updates, key) => updateElement(selected.id, updates, key)}
+                onDelete={() => void deleteSelected()}
+              />
+            )}
             {bg && <section className="space-y-3 rounded-xl border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-gray-900">
               <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-50">{t("site.background.title")}</h2>
               <label className="block text-sm text-gray-700 dark:text-gray-300">
@@ -447,11 +484,12 @@ export function SitePlan() {
 
 }
 
-function SelectionInfo({ element, editable, onDelete, onClose }: {
+function SelectionInfo({ element, editable, onDelete, onClose, className = "" }: {
   element: SiteElement;
   editable: boolean;
   onDelete: () => void;
   onClose: () => void;
+  className?: string;
 }) {
   const { t, i18n } = useTranslation();
   const type = resolvedType(element);
@@ -460,12 +498,19 @@ function SelectionInfo({ element, editable, onDelete, onClose }: {
   const length = shapeLength(element.shape);
   const num = (v: number, digits: number) => new Intl.NumberFormat(i18n.language, { maximumFractionDigits: digits }).format(v);
   const isLine = element.shape.type === "polyline";
+  // Read-only summary for phones: what the household wants to know at a glance.
+  const details = [
+    element.status && element.status !== "existing" ? t(`site.status.${element.status}`) + (element.plannedYear ? ` ${element.plannedYear}` : "") : null,
+    [element.speciesText, element.variety].filter(Boolean).join(" ") || null,
+    element.usage?.length ? element.usage.map((u) => t(`site.usage.${u}`)).join(", ") : null,
+    element.plantedYear ? t("site.element.planted", { year: element.plantedYear }) : null,
+  ].filter((d): d is string => !!d);
 
   return (
     <div
       role="region"
       aria-label={t("site.element.info")}
-      className="absolute bottom-14 left-1/2 flex w-[min(22rem,calc(100%-1.5rem))] -translate-x-1/2 items-start gap-3 rounded-xl bg-white/95 p-3 text-sm shadow-md ring-1 ring-gray-200 dark:bg-gray-900/95 dark:ring-white/10"
+      className={`absolute bottom-14 left-1/2 flex w-[min(22rem,calc(100%-1.5rem))] ${className} -translate-x-1/2 items-start gap-3 rounded-xl bg-white/95 p-3 text-sm shadow-md ring-1 ring-gray-200 dark:bg-gray-900/95 dark:ring-white/10`}
     >
       <Icon size={20} aria-hidden="true" className="mt-0.5 shrink-0 text-gray-500 dark:text-gray-400" />
       <div className="min-w-0 flex-1">
@@ -474,6 +519,7 @@ function SelectionInfo({ element, editable, onDelete, onClose }: {
           {area !== null && <>{t("site.element.area", { value: num(area, area < 10 ? 1 : 0) })} · </>}
           {t(isLine ? "site.element.length" : "site.element.perimeter", { value: formatLength(length, i18n.language) })}
         </p>
+        {details.length > 0 && <p className="text-gray-600 dark:text-gray-300">{details.join(" · ")}</p>}
       </div>
       {editable && <IconButton size="sm" icon={Trash2} tone="danger" label={t("site.element.delete")} onClick={onDelete} />}
       <IconButton size="sm" icon={X} label={t("common.close")} onClick={onClose} />
