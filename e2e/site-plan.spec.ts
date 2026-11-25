@@ -311,7 +311,9 @@ test.describe("site plan shadows", () => {
   // Times are local to the garden; CI runs in UTC.
   test.use({ viewport: { width: 1440, height: 900 }, timezoneId: "Europe/Berlin" });
 
-  test("summer noon throws shadows north; without a location the panel asks for one", async ({ page }) => {
+  test("summer noon throws shadows north in one even shade", async ({ page }) => {
+    // Start on a morning (shadows west), as CI did, so the check below must wait for the redraw.
+    await page.clock.setFixedTime(new Date("2026-06-21T08:00:00+02:00"));
     await seed(page); // Munich
     await page.goto("/#/site");
     await page.getByRole("button", { name: "Ohne Bild beginnen" }).click();
@@ -336,7 +338,8 @@ test.describe("site plan shadows", () => {
 
     // Overlapping shadow polygons must not darken: the shadow canvas holds opaque
     // pixels and is faded once as a whole (CSS opacity on the canvas element).
-    const shade = await page.evaluate(([x, y]) => {
+    // Konva redraws on the next animation frame, so poll until the canvas shows the new shadows.
+    const shade = () => page.evaluate(([x, y]) => {
       const layer = [...document.querySelectorAll<HTMLCanvasElement>("[data-testid=site-canvas] canvas")].find((c) => c.style.opacity !== "");
       if (!layer) return null;
       const r = layer.getBoundingClientRect();
@@ -345,7 +348,7 @@ test.describe("site plan shadows", () => {
       // Just north of the building (edge quads) and under it, where footprint, shifted footprint and quads all overlap.
       return { opacity: layer.style.opacity, edge: alphaAt(x, y - 5), overlap: alphaAt(x, y + 10) };
     }, [c.x, c.y] as const);
-    expect(shade).toEqual({ opacity: "0.32", edge: 255, overlap: 255 });
+    await expect.poll(shade).toEqual({ opacity: "0.32", edge: 255, overlap: 255 });
 
     // Collapsed, only the time row stays, and the shadows with it.
     await panel.getByRole("button", { name: "Sonnenfeld einklappen" }).click();
