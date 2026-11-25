@@ -2633,12 +2633,65 @@
       "length": "Length {{value}}",
       "delete": "Delete element",
       "deleteTitle": "Delete “{{name}}”?",
-      "deleteMessage": "The element is removed from the site plan. Ctrl+Z brings it back."
+      "deleteMessage": "The element is removed from the site plan. Ctrl+Z brings it back.",
+      "properties": "Properties",
+      "planted": "planted {{year}}"
     },
     "variants": {
       "greenhouse": "Greenhouse",
       "compost": "Compost",
       "wall": "Wall"
+    },
+    "fields": {
+      "name": "Name",
+      "variant": "Type",
+      "status": "Status",
+      "plannedYear": "Planned for (year)",
+      "height": "Height",
+      "heightHint": "Used for shadows.",
+      "notes": "Notes",
+      "crownDiameter": "Crown diameter",
+      "width": "Width",
+      "species": "Species",
+      "speciesHint": "For example apple, hazel, hornbeam.",
+      "variety": "Variety",
+      "usage": "Use",
+      "plantedYear": "Year planted",
+      "matureHeight": "Mature height",
+      "matureCrown": "Mature crown diameter",
+      "material": "Material",
+      "depth": "Depth",
+      "none": "Not specified",
+      "defaultValue": "Defaults to {{value}} m.",
+      "invalidNumber": "Enter a number between {{min}} and {{max}}."
+    },
+    "status": {
+      "existing": "Existing",
+      "planned": "Planned",
+      "remove": "To be removed"
+    },
+    "usage": {
+      "harvest": "Harvest",
+      "ornamental": "Ornamental",
+      "privacy": "Privacy screen",
+      "wildlife": "Birds and insects"
+    },
+    "materials": {
+      "lawn": "Lawn",
+      "paving": "Paving",
+      "gravel": "Gravel",
+      "concrete": "Concrete",
+      "asphalt": "Asphalt",
+      "decking": "Decking",
+      "soil": "Soil",
+      "mulch": "Bark mulch",
+      "other": "Other"
+    },
+    "views": {
+      "label": "View",
+      "all": "All",
+      "current": "Current",
+      "target": "Target"
     }
   }
 }

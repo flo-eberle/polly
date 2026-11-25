@@ -1,13 +1,16 @@
 import { memo, useState } from "react";
-import { Circle, Line, Rect } from "react-konva";
+import { Circle, Line, Rect, Text } from "react-konva";
 import type Konva from "konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 import type { SiteElement, SiteShape } from "@/types/site";
-import { edgeMidpoints, insertVertex, moveVertex, removeVertex, toPoints, translateShape } from "@/lib/siteShapes";
+import { edgeMidpoints, insertVertex, moveVertex, removeVertex, shapeBounds, toPoints, translateShape } from "@/lib/siteShapes";
 import { resolvedType } from "./elementTypes";
 
 /** Selection colour (sky-500): distinct from every element fill. */
 export const SELECT_COLOR = "#0ea5e9";
+
+/** Outline of elements marked for removal (red-600). */
+export const REMOVE_COLOR = "#dc2626";
 
 /** Name on every element node, so clicks can tell elements from the background. */
 export const ELEMENT_NODE = "site-element";
@@ -27,13 +30,18 @@ export const ElementNode = memo(function ElementNode({ element, scale, selected,
   const { style } = resolvedType(element);
   const px = (n: number) => n / scale;
   const shape = element.shape;
-  const stroke = selected ? SELECT_COLOR : style.stroke;
-  const outline = px(selected ? Math.max(style.strokeWidthPx, 2) : style.strokeWidthPx);
-  const dash = style.dash?.map(px);
+  const status = element.status ?? "existing";
+  // Planned: faded with a dashed outline. To remove: red outline (plus a cross, see RemoveMark).
+  const baseStroke = status === "remove" ? REMOVE_COLOR : style.stroke;
+  const stroke = selected ? SELECT_COLOR : baseStroke;
+  const outline = px(selected ? Math.max(style.strokeWidthPx, 2) : status === "remove" ? Math.max(style.strokeWidthPx, 2) : style.strokeWidthPx);
+  const dash = (status === "planned" ? style.dash ?? [6, 4] : style.dash)?.map(px);
+  const opacity = status === "planned" ? 0.55 : status === "remove" ? 0.7 : 1;
 
   const common = {
     id: element.id,
     name: ELEMENT_NODE,
+    opacity,
     draggable,
     onClick: (e: KonvaEventObject<MouseEvent>) => { e.cancelBubble = true; onSelect(element.id); },
     onTap: (e: KonvaEventObject<TouchEvent>) => { e.cancelBubble = true; onSelect(element.id); },
@@ -130,7 +138,7 @@ export const ElementNode = memo(function ElementNode({ element, scale, selected,
           <Line
             {...common}
             points={shape.points}
-            stroke={style.stroke}
+            stroke={status === "remove" ? REMOVE_COLOR : style.stroke}
             strokeWidth={width}
             hitStrokeWidth={Math.max(width, px(12))}
             dash={dash}
@@ -214,5 +222,48 @@ export function VertexEditor({ element, scale, onShapeChange }: VertexEditorProp
         />
       ))}
     </>
+  );
+}
+
+/** A red cross over an element marked for removal. */
+export function RemoveMark({ element, scale }: { element: SiteElement; scale: number }) {
+  const b = shapeBounds(element.shape);
+  if (!b) return null;
+  const common = { stroke: REMOVE_COLOR, strokeWidth: 2 / scale, opacity: 0.8, listening: false } as const;
+  return (
+    <>
+      <Line points={[b.minX, b.minY, b.maxX, b.maxY]} {...common} />
+      <Line points={[b.maxX, b.minY, b.minX, b.maxY]} {...common} />
+    </>
+  );
+}
+
+/** The element's name at the centre of its bounds, at a constant screen size. */
+export function NameLabel({ element, scale, dark }: { element: SiteElement; scale: number; dark: boolean }) {
+  const b = shapeBounds(element.shape);
+  if (!b || !element.name) return null;
+  const width = 160;
+  return (
+    <Text
+      x={(b.minX + b.maxX) / 2}
+      y={(b.minY + b.maxY) / 2}
+      scaleX={1 / scale}
+      scaleY={1 / scale}
+      width={width}
+      offsetX={width / 2}
+      offsetY={7}
+      align="center"
+      text={element.name}
+      fontSize={12}
+      fontStyle="600"
+      fontFamily="Inter, system-ui, sans-serif"
+      fill={dark ? "#f9fafb" : "#111827"}
+      stroke={dark ? "#111827" : "#ffffff"}
+      strokeWidth={3}
+      fillAfterStrokeEnabled
+      wrap="none"
+      ellipsis
+      listening={false}
+    />
   );
 }

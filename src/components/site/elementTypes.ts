@@ -182,8 +182,23 @@ export function elementVariant(kind: string, variantId: string | undefined): Ele
   return variants.find((v) => v.id === variantId) ?? variants[0];
 }
 
-/** Style, line width and height of an element: the kind's, overridden by its variant. */
-export function resolvedType(element: Pick<SiteElement, "kind" | "variant">): {
+/**
+ * Fill (areas) or stroke (paths) per surface material, so a lawn looks like
+ * one. Materials without an entry keep the kind's colour.
+ */
+export const MATERIAL_COLORS: Record<string, string> = {
+  lawn: "rgba(134,186,102,0.75)",
+  paving: "rgba(176,172,166,0.9)",
+  gravel: "rgba(214,200,170,0.9)",
+  concrete: "rgba(200,200,196,0.9)",
+  asphalt: "rgba(110,110,112,0.9)",
+  decking: "rgba(181,137,92,0.9)",
+  soil: "rgba(140,104,72,0.75)",
+  mulch: "rgba(120,84,56,0.85)",
+};
+
+/** Style, line width and height of an element: the kind's, overridden by its variant and material. */
+export function resolvedType(element: Pick<SiteElement, "kind" | "variant" | "material">): {
   style: ElementStyle;
   lineWidthM?: number;
   heightM?: number;
@@ -192,8 +207,14 @@ export function resolvedType(element: Pick<SiteElement, "kind" | "variant">): {
 } {
   const type = elementType(element.kind);
   const variant = elementVariant(element.kind, element.variant);
+  const materialColor = element.material ? MATERIAL_COLORS[element.material] : undefined;
+  const style: ElementStyle = { ...type.style, ...variant?.style };
+  if (materialColor) {
+    if (style.fill !== undefined) style.fill = materialColor;
+    else style.stroke = materialColor;
+  }
   return {
-    style: { ...type.style, ...variant?.style },
+    style,
     lineWidthM: variant?.lineWidthM ?? type.lineWidthM,
     heightM: variant?.heightM ?? type.heightM,
     labelKey: variant?.labelKey ?? type.labelKey,

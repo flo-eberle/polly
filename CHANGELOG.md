@@ -29,6 +29,16 @@ turns that section into a version heading.
 - Sub-kinds in the drawing toolbar: greenhouse and compost under buildings,
   wall under fences, each with its own look and default height; ponds as a
   kind of their own (polygon or circle).
+- Properties panel for the selected element (desktop side bar): name,
+  sub-kind, status (existing, planned with year, to be removed), height and
+  notes for every element; species, variety, use, year planted, crown
+  diameter and mature size for trees and shrubs; material for surfaces and
+  paths, which also sets their colour; width for lines; depth for ponds.
+  Typing into one field is a single undo step.
+- Status on the plan: planned elements are faded and dashed, elements to be
+  removed are red and crossed out. A view switch shows everything, today's
+  state or the target state. Names appear on the plan (layer "Labels").
+- On phones a tapped element shows its status, species, use and year planted.
 
 ### Fixed
 - After an update, new texts could show as raw keys until the next reload:
