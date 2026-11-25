@@ -213,6 +213,47 @@ test.describe("site plan drawing", () => {
   });
 });
 
+test.describe("site plan variants", () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test("greenhouse, wall and pond", async ({ page }) => {
+    await seed(page);
+    await page.goto("/#/site");
+    await page.getByRole("button", { name: "Ohne Bild beginnen" }).click();
+    const box = (await page.getByTestId("site-canvas").boundingBox())!;
+    const c = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    const drag = async (from: number[], to: number[]) => {
+      await page.mouse.move(c.x + from[0], c.y + from[1]);
+      await page.mouse.down();
+      await page.mouse.move(c.x + to[0], c.y + to[1], { steps: 5 });
+      await page.mouse.up();
+    };
+
+    await page.getByRole("button", { name: "Gebäude zeichnen" }).click();
+    await page.getByRole("group", { name: "Art" }).getByRole("button", { name: "Gewächshaus" }).click();
+    await drag([-200, -150], [-100, -100]);
+    await expect(page.getByRole("region", { name: "Ausgewähltes Element" })).toContainText("Gewächshaus");
+
+    await page.getByRole("button", { name: "Zaun zeichnen" }).click();
+    await page.getByRole("group", { name: "Art" }).getByRole("button", { name: "Mauer" }).click();
+    await page.mouse.click(c.x, c.y);
+    await page.mouse.click(c.x + 100, c.y);
+    await page.keyboard.press("Enter");
+
+    await page.getByRole("button", { name: "Teich zeichnen" }).click();
+    await page.getByRole("group", { name: "Form" }).getByRole("button", { name: "Kreis" }).click();
+    await drag([150, 150], [180, 150]);
+
+    const els = await siteElements(page);
+    expect(els.map((e) => [e.kind, (e as Element & { variant?: string }).variant ?? null, e.shape.type])).toEqual([
+      ["building", "greenhouse", "rect"],
+      ["fence", "wall", "polyline"],
+      ["pond", null, "circle"],
+    ]);
+    expect((els[1].shape as Shape & { width: number }).width).toBe(0.25);
+  });
+});
+
 test.describe("site plan on a phone", () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
 

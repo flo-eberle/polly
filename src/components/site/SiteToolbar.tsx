@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { MousePointer2, Pentagon, Redo2, Ruler, Square, Undo2 } from "lucide-react";
+import { Circle, MousePointer2, Pentagon, Redo2, Ruler, Square, Undo2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { ELEMENT_TYPES, elementType, type ShapeType } from "./elementTypes";
 import type { SiteTool } from "./SiteCanvas";
@@ -13,7 +13,7 @@ interface SiteToolbarProps {
   canRedo: boolean;
 }
 
-const SHAPE_ICONS: Partial<Record<ShapeType, LucideIcon>> = { rect: Square, polygon: Pentagon };
+const SHAPE_ICONS: Partial<Record<ShapeType, LucideIcon>> = { rect: Square, polygon: Pentagon, circle: Circle };
 
 function ToolButton({ icon: Icon, label, active, disabled, onClick, shortcut }: {
   icon: LucideIcon;
@@ -64,7 +64,7 @@ export function SiteToolbar({ tool, onToolChange, onUndo, onRedo, canUndo, canRe
             icon={type.icon}
             label={t("site.tools.draw", { kind: t(type.labelKey) })}
             active={tool.type === "draw" && tool.kind === type.kind}
-            onClick={() => onToolChange({ type: "draw", kind: type.kind, shape: type.shapes[0] })}
+            onClick={() => onToolChange({ type: "draw", kind: type.kind, shape: type.shapes[0], variant: type.variants?.[0].id })}
           />
         ))}
         <div className="my-1 h-px bg-gray-200 dark:bg-white/10" aria-hidden="true" />
@@ -72,25 +72,46 @@ export function SiteToolbar({ tool, onToolChange, onUndo, onRedo, canUndo, canRe
         <ToolButton icon={Redo2} label={t("site.tools.redo")} shortcut="Ctrl+Shift+Z" disabled={!canRedo} onClick={onRedo} />
       </div>
 
-      {drawing && tool.type === "draw" && drawing.shapes.length > 1 && (
-        <div
-          role="group"
-          aria-label={t("site.tools.shape")}
-          className="flex flex-col gap-0.5 self-start rounded-xl bg-white/95 p-1 shadow-sm ring-1 ring-gray-200 dark:bg-gray-900/95 dark:ring-white/10"
-        >
-          {drawing.shapes.map((shape) => {
-            const Icon = SHAPE_ICONS[shape];
-            if (!Icon) return null;
-            return (
-              <ToolButton
-                key={shape}
-                icon={Icon}
-                label={t(`site.shapes.${shape}`)}
-                active={tool.shape === shape}
-                onClick={() => onToolChange({ ...tool, shape })}
-              />
-            );
-          })}
+      {drawing && tool.type === "draw" && (drawing.shapes.length > 1 || (drawing.variants?.length ?? 0) > 1) && (
+        <div className="flex flex-col gap-2 self-start">
+          {drawing.variants && drawing.variants.length > 1 && (
+            <div
+              role="group"
+              aria-label={t("site.tools.variant")}
+              className="flex flex-col gap-0.5 rounded-xl bg-white/95 p-1 shadow-sm ring-1 ring-gray-200 dark:bg-gray-900/95 dark:ring-white/10"
+            >
+              {drawing.variants.map((variant) => (
+                <ToolButton
+                  key={variant.id}
+                  icon={variant.icon}
+                  label={t(variant.labelKey)}
+                  active={(tool.variant ?? drawing.variants?.[0].id) === variant.id}
+                  onClick={() => onToolChange({ ...tool, variant: variant.id })}
+                />
+              ))}
+            </div>
+          )}
+          {drawing.shapes.length > 1 && (
+            <div
+              role="group"
+              aria-label={t("site.tools.shape")}
+              className="flex flex-col gap-0.5 rounded-xl bg-white/95 p-1 shadow-sm ring-1 ring-gray-200 dark:bg-gray-900/95 dark:ring-white/10"
+            >
+              {drawing.shapes.map((shape) => {
+                const Icon = SHAPE_ICONS[shape];
+                if (!Icon) return null;
+                return (
+                  <ToolButton
+                    key={shape}
+                    icon={Icon}
+                    label={t(`site.shapes.${shape}`)}
+                    active={tool.shape === shape}
+                    onClick={() => onToolChange({ ...tool, shape })}
+                  />
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>

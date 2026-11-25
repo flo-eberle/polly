@@ -44,6 +44,8 @@ export default defineConfig({
         skipWaiting: true,
         clientsClaim: true,
         navigateFallback: "index.html",
+        // Translations are requested with ?v=<build id>; the precache entry is the same file.
+        ignoreURLParametersMatching: [/^v$/, /^utm_/, /^fbclid$/],
         runtimeCaching: [
           {
             urlPattern: /assets\/.*\.(js|css)$/,
@@ -66,6 +68,7 @@ export default defineConfig({
   ],
   // Shown under Settings → "Über Polly" (the stores ask for a visible version).
   define: {
+    __BUILD_ID__: JSON.stringify(Date.now().toString(36)),
     __APP_VERSION__: JSON.stringify((JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8")) as { version: string }).version),
   },
   resolve: {

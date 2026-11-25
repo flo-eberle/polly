@@ -34,7 +34,7 @@ import {
   translateShape,
   unionBounds,
 } from "@/lib/siteShapes";
-import { ELEMENT_TYPES, elementType } from "@/components/site/elementTypes";
+import { ELEMENT_TYPES, elementType, elementVariant, resolvedType } from "@/components/site/elementTypes";
 import { act, renderHook } from "@testing-library/react";
 import { newSiteElement, normalizeDeg } from "@/store/siteSlice";
 import { useElementHistory } from "@/components/site/useElementHistory";
@@ -326,6 +326,23 @@ describe("element registry", () => {
       expect(kinds.has(type.kind)).toBe(false);
       kinds.add(type.kind);
     }
+  });
+
+  it("gives every variant a unique id and resolves overrides", () => {
+    for (const type of ELEMENT_TYPES) {
+      const ids = (type.variants ?? []).map((v) => v.id);
+      expect(new Set(ids).size).toBe(ids.length);
+    }
+    const wall = resolvedType({ kind: "fence", variant: "wall" });
+    expect(wall.lineWidthM).toBe(0.25);
+    expect(wall.style.dash).toBeUndefined();
+    expect(wall.labelKey).toBe("site.variants.wall");
+    const fence = resolvedType({ kind: "fence" });
+    expect(fence.style.dash).toEqual([6, 3]);
+    expect(resolvedType({ kind: "building", variant: "greenhouse" }).heightM).toBe(2.5);
+    // Unknown variants fall back to the kind's default; kinds without variants have none.
+    expect(elementVariant("building", "future")?.id).toBe("building");
+    expect(elementVariant("tree", undefined)).toBeNull();
   });
 
   it("falls back for kinds written by a newer version", () => {

@@ -2721,11 +2721,13 @@
       "draw": "Dibujar: {{kind}}",
       "undo": "Deshacer",
       "redo": "Rehacer",
-      "shape": "Forma"
+      "shape": "Forma",
+      "variant": "Tipo"
     },
     "shapes": {
       "rect": "Rectángulo",
-      "polygon": "Polígono"
+      "polygon": "Polígono",
+      "circle": "Círculo"
     },
     "hints": {
       "rect": "Arrastra de esquina a esquina. Esc sale de la herramienta.",
@@ -2746,7 +2748,8 @@
       "shrub": "Arbusto",
       "hedge": "Seto",
       "fence": "Valla",
-      "unknown": "Elemento desconocido"
+      "unknown": "Elemento desconocido",
+      "pond": "Estanque"
     },
     "element": {
       "info": "Elemento seleccionado",
@@ -2756,6 +2759,11 @@
       "delete": "Eliminar elemento",
       "deleteTitle": "¿Eliminar «{{name}}»?",
       "deleteMessage": "El elemento se quita del plano. Ctrl+Z lo recupera."
+    },
+    "variants": {
+      "greenhouse": "Invernadero",
+      "compost": "Compost",
+      "wall": "Muro"
     }
   }
 }

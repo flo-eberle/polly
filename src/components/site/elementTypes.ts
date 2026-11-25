@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react";
-import { Fence, Footprints, House, LandPlot, RectangleHorizontal, Shrub, TreeDeciduous, Trees } from "lucide-react";
-import type { SiteLayerId, SiteShape } from "@/types/site";
+import { BrickWall, Fence, Footprints, House, LandPlot, RectangleHorizontal, Recycle, Shrub, TreeDeciduous, Trees, Warehouse, Waves } from "lucide-react";
+import type { SiteElement, SiteLayerId, SiteShape } from "@/types/site";
 
 /**
  * Element registry: everything that differs between kinds of site plan
@@ -18,6 +18,19 @@ export interface ElementStyle {
   dash?: number[];
 }
 
+/**
+ * A sub-kind (greenhouse under building, wall under fence). It shares layer
+ * and shapes with its kind and overrides only what differs.
+ */
+export interface ElementVariant {
+  id: string;
+  labelKey: string;
+  icon: LucideIcon;
+  style?: Partial<ElementStyle>;
+  lineWidthM?: number;
+  heightM?: number;
+}
+
 export interface ElementType {
   kind: string;
   layer: SiteLayerId;
@@ -31,6 +44,8 @@ export interface ElementType {
   lineWidthM?: number;
   /** Default height in metres, used later for shadows. */
   heightM?: number;
+  /** Sub-kinds; the first is the default and should describe the kind itself. */
+  variants?: ElementVariant[];
 }
 
 export const ELEMENT_TYPES: ElementType[] = [
@@ -42,6 +57,23 @@ export const ELEMENT_TYPES: ElementType[] = [
     shapes: ["rect", "polygon"],
     style: { fill: "#d6cfc4", stroke: "#6f6355", strokeWidthPx: 1.5 },
     heightM: 5,
+    variants: [
+      { id: "building", labelKey: "site.kinds.building", icon: House },
+      {
+        id: "greenhouse",
+        labelKey: "site.variants.greenhouse",
+        icon: Warehouse,
+        style: { fill: "rgba(186,230,253,0.6)", stroke: "#0284c7" },
+        heightM: 2.5,
+      },
+      {
+        id: "compost",
+        labelKey: "site.variants.compost",
+        icon: Recycle,
+        style: { fill: "rgba(107,79,58,0.75)", stroke: "#4a3426" },
+        heightM: 1,
+      },
+    ],
   },
   {
     kind: "surface",
@@ -50,6 +82,14 @@ export const ELEMENT_TYPES: ElementType[] = [
     icon: LandPlot,
     shapes: ["polygon", "rect"],
     style: { fill: "rgba(214,211,209,0.85)", stroke: "#a8a29e", strokeWidthPx: 1 },
+  },
+  {
+    kind: "pond",
+    layer: "surfaces",
+    labelKey: "site.kinds.pond",
+    icon: Waves,
+    shapes: ["polygon", "circle"],
+    style: { fill: "rgba(56,152,214,0.55)", stroke: "#1d6fa5", strokeWidthPx: 1.5 },
   },
   {
     kind: "path",
@@ -105,6 +145,17 @@ export const ELEMENT_TYPES: ElementType[] = [
     style: { stroke: "#57534e", strokeWidthPx: 1, dash: [6, 3] },
     lineWidthM: 0.08,
     heightM: 1.2,
+    variants: [
+      { id: "fence", labelKey: "site.kinds.fence", icon: Fence },
+      {
+        id: "wall",
+        labelKey: "site.variants.wall",
+        icon: BrickWall,
+        style: { stroke: "#8a8580", dash: undefined },
+        lineWidthM: 0.25,
+        heightM: 1.5,
+      },
+    ],
   },
 ];
 
@@ -122,4 +173,30 @@ const UNKNOWN: ElementType = {
 
 export function elementType(kind: string): ElementType {
   return BY_KIND.get(kind) ?? UNKNOWN;
+}
+
+/** The variant an element uses; the kind's first variant when unset or unknown. */
+export function elementVariant(kind: string, variantId: string | undefined): ElementVariant | null {
+  const variants = elementType(kind).variants;
+  if (!variants?.length) return null;
+  return variants.find((v) => v.id === variantId) ?? variants[0];
+}
+
+/** Style, line width and height of an element: the kind's, overridden by its variant. */
+export function resolvedType(element: Pick<SiteElement, "kind" | "variant">): {
+  style: ElementStyle;
+  lineWidthM?: number;
+  heightM?: number;
+  labelKey: string;
+  icon: LucideIcon;
+} {
+  const type = elementType(element.kind);
+  const variant = elementVariant(element.kind, element.variant);
+  return {
+    style: { ...type.style, ...variant?.style },
+    lineWidthM: variant?.lineWidthM ?? type.lineWidthM,
+    heightM: variant?.heightM ?? type.heightM,
+    labelKey: variant?.labelKey ?? type.labelKey,
+    icon: variant?.icon ?? type.icon,
+  };
 }

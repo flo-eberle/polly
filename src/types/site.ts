@@ -75,6 +75,8 @@ export interface SiteElement {
   id: string;
   /** Key in the element registry, e.g. "tree", "building", "surface". */
   kind: string;
+  /** Sub-kind from the registry (greenhouse, wall); the kind's default when unset. */
+  variant?: string;
   layer: SiteLayerId;
   shape: SiteShape;
   status?: "existing" | "planned" | "remove";

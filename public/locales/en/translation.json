@@ -2596,11 +2596,13 @@
       "draw": "Draw: {{kind}}",
       "undo": "Undo",
       "redo": "Redo",
-      "shape": "Shape"
+      "shape": "Shape",
+      "variant": "Type"
     },
     "shapes": {
       "rect": "Rectangle",
-      "polygon": "Polygon"
+      "polygon": "Polygon",
+      "circle": "Circle"
     },
     "hints": {
       "rect": "Drag from corner to corner. Esc leaves the tool.",
@@ -2621,7 +2623,8 @@
       "shrub": "Shrub",
       "hedge": "Hedge",
       "fence": "Fence",
-      "unknown": "Unknown element"
+      "unknown": "Unknown element",
+      "pond": "Pond"
     },
     "element": {
       "info": "Selected element",
@@ -2631,6 +2634,11 @@
       "delete": "Delete element",
       "deleteTitle": "Delete “{{name}}”?",
       "deleteMessage": "The element is removed from the site plan. Ctrl+Z brings it back."
+    },
+    "variants": {
+      "greenhouse": "Greenhouse",
+      "compost": "Compost",
+      "wall": "Wall"
     }
   }
 }

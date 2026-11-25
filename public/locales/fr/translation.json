@@ -2721,11 +2721,13 @@
       "draw": "Dessiner : {{kind}}",
       "undo": "Annuler",
       "redo": "Rétablir",
-      "shape": "Forme"
+      "shape": "Forme",
+      "variant": "Type"
     },
     "shapes": {
       "rect": "Rectangle",
-      "polygon": "Polygone"
+      "polygon": "Polygone",
+      "circle": "Cercle"
     },
     "hints": {
       "rect": "Faites glisser d’un coin à l’autre. Échap quitte l’outil.",
@@ -2746,7 +2748,8 @@
       "shrub": "Arbuste",
       "hedge": "Haie",
       "fence": "Clôture",
-      "unknown": "Élément inconnu"
+      "unknown": "Élément inconnu",
+      "pond": "Bassin"
     },
     "element": {
       "info": "Élément sélectionné",
@@ -2756,6 +2759,11 @@
       "delete": "Supprimer l’élément",
       "deleteTitle": "Supprimer « {{name}} » ?",
       "deleteMessage": "L’élément est retiré du plan. Ctrl+Z le rétablit."
+    },
+    "variants": {
+      "greenhouse": "Serre",
+      "compost": "Compost",
+      "wall": "Mur"
     }
   }
 }

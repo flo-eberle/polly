@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { distance, formatLength, gridLines, gridStep, screenToPlan, zoomAt, type Point, type View } from "@/lib/siteGeometry";
 import { pathLength, polygonArea, rectFromCorners, toFlat } from "@/lib/siteShapes";
 import { SITE_LAYERS, layerState, type SiteElement, type SiteSettings, type SiteShape } from "@/types/site";
-import { elementType, type ShapeType } from "./elementTypes";
+import { elementType, resolvedType, type ShapeType } from "./elementTypes";
 import { ELEMENT_NODE, ElementNode, SELECT_COLOR, VertexEditor } from "./SiteElements";
 import type { SiteImageState } from "./useSiteImage";
 
@@ -14,7 +14,7 @@ export type SiteTool =
   | { type: "select" }
   | { type: "measure" }
   | { type: "calibrate" }
-  | { type: "draw"; kind: string; shape: ShapeType };
+  | { type: "draw"; kind: string; shape: ShapeType; variant?: string };
 
 interface SiteCanvasProps {
   width: number;
@@ -29,7 +29,7 @@ interface SiteCanvasProps {
   tool: SiteTool;
   selectedId: string | null;
   onSelect: (id: string | null) => void;
-  onCreate: (kind: string, shape: SiteShape) => void;
+  onCreate: (kind: string, shape: SiteShape, variant?: string) => void;
   onShapeChange: (id: string, shape: SiteShape) => void;
   /** Calibration line finished: its length in plan metres at the current scale. */
   onMeasured: (measuredM: number) => void;
@@ -130,9 +130,10 @@ export const SiteCanvas = memo(function SiteCanvas(props: SiteCanvasProps) {
     }
     if (tool.type !== "draw") return;
     setDraft(null);
-    if (tool.shape === "polygon" && points.length >= 3) onCreate(tool.kind, { type: "polygon", points: toFlat(points) });
+    if (tool.shape === "polygon" && points.length >= 3) onCreate(tool.kind, { type: "polygon", points: toFlat(points) }, tool.variant);
     if (tool.shape === "polyline" && points.length >= 2) {
-      onCreate(tool.kind, { type: "polyline", points: toFlat(points), width: elementType(tool.kind).lineWidthM ?? 0.5 });
+      const width = resolvedType({ kind: tool.kind, variant: tool.variant }).lineWidthM ?? 0.5;
+      onCreate(tool.kind, { type: "polyline", points: toFlat(points), width }, tool.variant);
     }
   };
 
@@ -141,10 +142,10 @@ export const SiteCanvas = memo(function SiteCanvas(props: SiteCanvasProps) {
     if (tool.type !== "draw") return;
     if (tool.shape === "rect") {
       const rect = rectFromCorners(start, end);
-      if (rect.w >= MIN_SIZE_M && rect.h >= MIN_SIZE_M) onCreate(tool.kind, rect);
+      if (rect.w >= MIN_SIZE_M && rect.h >= MIN_SIZE_M) onCreate(tool.kind, rect, tool.variant);
     } else if (tool.shape === "circle") {
       const r = distance(start, end);
-      if (r >= MIN_SIZE_M) onCreate(tool.kind, { type: "circle", cx: start.x, cy: start.y, r });
+      if (r >= MIN_SIZE_M) onCreate(tool.kind, { type: "circle", cx: start.x, cy: start.y, r }, tool.variant);
     }
   };
 

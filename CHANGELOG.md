@@ -26,6 +26,14 @@ turns that section into a version heading.
   corner with a double click, delete with confirmation. A selected element
   shows its area and perimeter or length; on phones tapping shows the same.
 - The site plan can be started without a background image.
+- Sub-kinds in the drawing toolbar: greenhouse and compost under buildings,
+  wall under fences, each with its own look and default height; ponds as a
+  kind of their own (polygon or circle).
+
+### Fixed
+- After an update, new texts could show as raw keys until the next reload:
+  translations are now requested per build, and reloaded when a new version
+  of the app takes over.
 
 ## [0.1.0] - 2026-11-24
 

@@ -4,7 +4,7 @@ import type Konva from "konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 import type { SiteElement, SiteShape } from "@/types/site";
 import { edgeMidpoints, insertVertex, moveVertex, removeVertex, toPoints, translateShape } from "@/lib/siteShapes";
-import { elementType } from "./elementTypes";
+import { resolvedType } from "./elementTypes";
 
 /** Selection colour (sky-500): distinct from every element fill. */
 export const SELECT_COLOR = "#0ea5e9";
@@ -24,8 +24,7 @@ interface ElementNodeProps {
 
 /** One element on the canvas, drawn from its registry style. */
 export const ElementNode = memo(function ElementNode({ element, scale, selected, draggable, onSelect, onShapeChange }: ElementNodeProps) {
-  const type = elementType(element.kind);
-  const { style } = type;
+  const { style } = resolvedType(element);
   const px = (n: number) => n / scale;
   const shape = element.shape;
   const stroke = selected ? SELECT_COLOR : style.stroke;

@@ -27,7 +27,7 @@ import { newSiteElement } from "@/store/siteSlice";
 import { SITE_LAYERS, layerState, type SiteElement, type SiteLayerId, type SiteShape } from "@/types/site";
 import { SiteCanvas, type SiteTool } from "./SiteCanvas";
 import { SiteToolbar } from "./SiteToolbar";
-import { elementType } from "./elementTypes";
+import { elementType, resolvedType } from "./elementTypes";
 import { useElementHistory } from "./useElementHistory";
 import { useSiteImage } from "./useSiteImage";
 import { useIsDark } from "./useIsDark";
@@ -167,9 +167,9 @@ export function SitePlan() {
 
   // --- Elements ---------------------------------------------------------------
 
-  const createElement = useCallback((kind: string, shape: SiteShape) => {
+  const createElement = useCallback((kind: string, shape: SiteShape, variant?: string) => {
     const type = elementType(kind);
-    const created = newSiteElement({ kind, layer: type.layer, shape, status: "existing" });
+    const created = newSiteElement({ kind, ...(variant ? { variant } : {}), layer: type.layer, shape, status: "existing" });
     commit([...useStore.getState().siteElements, created]);
     setSelectedId(created.id);
   }, [commit]);
@@ -182,7 +182,7 @@ export function SitePlan() {
   const deleteSelected = useCallback(async () => {
     const target = useStore.getState().siteElements.find((e) => e.id === selectedId);
     if (!target) return;
-    const name = target.name || t(elementType(target.kind).labelKey);
+    const name = target.name || t(resolvedType(target).labelKey);
     const ok = await confirm({
       title: t("site.element.deleteTitle", { name }),
       message: t("site.element.deleteMessage"),
@@ -454,7 +454,7 @@ function SelectionInfo({ element, editable, onDelete, onClose }: {
   onClose: () => void;
 }) {
   const { t, i18n } = useTranslation();
-  const type = elementType(element.kind);
+  const type = resolvedType(element);
   const Icon = type.icon;
   const area = shapeArea(element.shape);
   const length = shapeLength(element.shape);

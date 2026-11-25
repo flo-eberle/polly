@@ -2596,11 +2596,13 @@
       "draw": "{{kind}} zeichnen",
       "undo": "Rückgängig",
       "redo": "Wiederholen",
-      "shape": "Form"
+      "shape": "Form",
+      "variant": "Art"
     },
     "shapes": {
       "rect": "Rechteck",
-      "polygon": "Polygon"
+      "polygon": "Polygon",
+      "circle": "Kreis"
     },
     "hints": {
       "rect": "Von Ecke zu Ecke ziehen. Esc beendet das Werkzeug.",
@@ -2621,7 +2623,8 @@
       "shrub": "Strauch",
       "hedge": "Hecke",
       "fence": "Zaun",
-      "unknown": "Unbekanntes Element"
+      "unknown": "Unbekanntes Element",
+      "pond": "Teich"
     },
     "element": {
       "info": "Ausgewähltes Element",
@@ -2631,6 +2634,11 @@
       "delete": "Element löschen",
       "deleteTitle": "„{{name}}“ löschen?",
       "deleteMessage": "Das Element wird aus dem Lageplan entfernt. Mit Strg+Z holst du es zurück."
+    },
+    "variants": {
+      "greenhouse": "Gewächshaus",
+      "compost": "Kompost",
+      "wall": "Mauer"
     }
   }
 }
