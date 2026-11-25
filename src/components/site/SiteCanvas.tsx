@@ -1,11 +1,11 @@
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, memo, useEffect, useMemo, useRef, useState } from "react";
 import { Circle, Group, Image as KonvaImage, Label, Layer, Line, Rect, Stage, Tag, Text, Transformer } from "react-konva";
 import type Konva from "konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 import { useTranslation } from "react-i18next";
 import { distance, formatLength, gridLines, gridStep, screenToPlan, zoomAt, type Point, type View } from "@/lib/siteGeometry";
 import { pathLength, polygonArea, rectFromCorners, toFlat } from "@/lib/siteShapes";
-import { SITE_LAYERS, layerState, type SiteElement, type SiteSettings, type SiteShape } from "@/types/site";
+import { SITE_LAYERS, layerState, type SiteElement, type SiteLayerId, type SiteSettings, type SiteShape } from "@/types/site";
 import { elementType, resolvedType, type ShapeType } from "./elementTypes";
 import { ELEMENT_NODE, ElementNode, NameLabel, RemoveMark, SELECT_COLOR, VertexEditor } from "./SiteElements";
 import type { SiteImageState } from "./useSiteImage";
@@ -39,6 +39,8 @@ interface SiteCanvasProps {
   onDeleteSelected: () => void;
   onUndo: () => void;
   onRedo: () => void;
+  /** Shadow polygons (flat point arrays) or null when shadows are off. */
+  shadows: { solid: number[][]; partial: number[][] } | null;
   dark: boolean;
 }
 
@@ -47,6 +49,10 @@ type Draft =
   | { mode: "points"; points: Point[]; done?: boolean };
 
 const WHEEL_SENSITIVITY = 0.0015;
+/** Layers lying flat on the ground: shadows fall onto them. */
+const GROUND_LAYERS: readonly SiteLayerId[] = ["surfaces", "beds"];
+/** Layers that stand up: drawn above the shadows. */
+const RAISED_LAYERS: readonly SiteLayerId[] = ["buildings", "woody", "lines", "objects"];
 /** Click this close (screen px) to the first point to close a polygon. */
 const CLOSE_PX = 10;
 /** Two clicks this close (screen px) and this quick count as a double click. */
@@ -64,11 +70,12 @@ function isTyping(target: EventTarget | null): boolean {
 export const SiteCanvas = memo(function SiteCanvas(props: SiteCanvasProps) {
   const {
     width, height, view, onViewChange, settings, elements, image, editable, tool, selectedId,
-    onSelect, onCreate, onShapeChange, onMeasured, onBackgroundMoved, onEscape, onDeleteSelected, onUndo, onRedo, dark,
+    onSelect, onCreate, onShapeChange, onMeasured, onBackgroundMoved, onEscape, onDeleteSelected, onUndo, onRedo, shadows, dark,
   } = props;
   const { t, i18n } = useTranslation();
   const stageRef = useRef<Konva.Stage>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
+  const groundTransformerRef = useRef<Konva.Transformer>(null);
   const pinchRef = useRef<{ dist: number; center: Point } | null>(null);
   const lastClickRef = useRef(0);
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -93,16 +100,19 @@ export const SiteCanvas = memo(function SiteCanvas(props: SiteCanvasProps) {
   const selectedLayer = selected ? layerState(settings, elementType(selected.kind).layer) : null;
   const selectedEditable = !!selected && editable && selecting && !selected.locked && !selectedLayer?.locked;
 
-  // Attach the transformer to the selected rectangle or circle.
+  // Attach the transformer of the selected element's layer to a rectangle or circle.
   useEffect(() => {
-    const tr = transformerRef.current;
     const stage = stageRef.current;
-    if (!tr || !stage) return;
+    if (!stage) return;
     const node = selected && selectedEditable && (selected.shape.type === "rect" || selected.shape.type === "circle")
       ? stage.findOne(`#${selected.id}`)
       : null;
-    tr.nodes(node ? [node] : []);
-    tr.getLayer()?.batchDraw();
+    const onGround = !!selected && GROUND_LAYERS.includes(elementType(selected.kind).layer);
+    for (const [tr, active] of [[groundTransformerRef.current, onGround], [transformerRef.current, !onGround]] as const) {
+      if (!tr) continue;
+      tr.nodes(node && active ? [node] : []);
+      tr.getLayer()?.batchDraw();
+    }
   }, [selected, selectedEditable]);
 
   const grid = useMemo(() => {
@@ -379,38 +389,54 @@ export const SiteCanvas = memo(function SiteCanvas(props: SiteCanvasProps) {
         ))}
       </Layer>
 
-      <Layer listening={selecting || !editable}>
-        {visibleLayers.map((layer) => {
-          const locked = layerState(settings, layer).locked;
-          return (
-            <Group key={layer} listening={!editable || !locked}>
-              {byLayer(layer).map((el) => (
-                <ElementNodeWithMark
-                  key={el.id}
-                  element={el}
-                  scale={view.scale}
-                  selected={el.id === selectedId}
-                  draggable={editable && selecting && !locked && !el.locked}
-                  onSelect={onSelect}
-                  onShapeChange={onShapeChange}
-                />
-              ))}
-            </Group>
-          );
-        })}
-        {selected && selectedEditable && <VertexEditor element={selected} scale={view.scale} onShapeChange={onShapeChange} />}
-        <Transformer
-          ref={transformerRef}
-          rotateEnabled={selected?.shape.type === "rect"}
-          keepRatio={selected?.shape.type === "circle"}
-          enabledAnchors={selected?.shape.type === "circle" ? ["top-left", "top-right", "bottom-left", "bottom-right"] : undefined}
-          borderStroke={SELECT_COLOR}
-          anchorStroke={SELECT_COLOR}
-          anchorSize={10}
-          ignoreStroke
-          flipEnabled={false}
-        />
-      </Layer>
+      {/* Ground-level elements, then the shadows falling on them, then everything that stands up. */}
+      {[GROUND_LAYERS, RAISED_LAYERS].map((group, gi) => (
+        <Fragment key={gi}>
+          {gi === 1 && shadows && (
+            <>
+              <Layer listening={false} opacity={(dark ? 0.32 : 0.22) * 0.5}>
+                {shadows.partial.map((pts, i) => <Line key={i} points={pts} closed fill="#0f172a" />)}
+              </Layer>
+              <Layer listening={false} opacity={dark ? 0.42 : 0.3}>
+                {shadows.solid.map((pts, i) => <Line key={i} points={pts} closed fill="#0f172a" />)}
+              </Layer>
+            </>
+          )}
+          <Layer listening={selecting || !editable}>
+            {visibleLayers.filter((l) => group.includes(l)).map((layer) => {
+              const locked = layerState(settings, layer).locked;
+              return (
+                <Group key={layer} listening={!editable || !locked}>
+                  {byLayer(layer).map((el) => (
+                    <ElementNodeWithMark
+                      key={el.id}
+                      element={el}
+                      scale={view.scale}
+                      selected={el.id === selectedId}
+                      draggable={editable && selecting && !locked && !el.locked}
+                      onSelect={onSelect}
+                      onShapeChange={onShapeChange}
+                    />
+                  ))}
+                </Group>
+              );
+            })}
+            {gi === 1 && selected && selectedEditable && <VertexEditor element={selected} scale={view.scale} onShapeChange={onShapeChange} />}
+            {/* One transformer per layer: Konva expects it in the layer of the node it moves. */}
+            <Transformer
+              ref={gi === 0 ? groundTransformerRef : transformerRef}
+              rotateEnabled={selected?.shape.type === "rect"}
+              keepRatio={selected?.shape.type === "circle"}
+              enabledAnchors={selected?.shape.type === "circle" ? ["top-left", "top-right", "bottom-left", "bottom-right"] : undefined}
+              borderStroke={SELECT_COLOR}
+              anchorStroke={SELECT_COLOR}
+              anchorSize={10}
+              ignoreStroke
+              flipEnabled={false}
+            />
+          </Layer>
+        </Fragment>
+      ))}
 
       {layerState(settings, "labels").visible && (
         <Layer listening={false}>

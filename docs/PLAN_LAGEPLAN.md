@@ -286,7 +286,7 @@ Nicht geplant ist eine echte 3D-Ansicht.
 | 1 | **umgesetzt** (#11) — Lageplan-Grundgerüst: Route `/site`, Sidebar „Grundstück“, Verschieben und Zoomen, Hintergrund importieren, kalibrieren, verschieben und drehen, Nordrichtung, Raster und Maßstab, Ebenen-Panel, Store/Export/Import |
 | 2 | **umgesetzt** (#12; Unterarten Gewächshaus, Kompost, Mauer und Teich ergänzt) — Zeichnen und Attribute: Polygon, Rechteck, Kreis, Linie; Transformieren und Eckpunkte; Eigenschaften-Panel aus der Registry; Status-Ansichten; Fläche und Länge; Messwerkzeug; Rückgängig; Löschen mit Bestätigung; am Handy nur Ansicht |
 | 3 | Bibliothek: Palette, generierte Symbole, Flächenmuster |
-| 4 | Schatten: SunCalc, Schatten-Layer, Zeitregler |
+| 4 | **umgesetzt** (#14) — Schatten: SunCalc, Schatten-Layer, Zeitregler |
 | 5 | Verknüpfungen: Ernte für Gehölze, Schnitt-Aufgaben, Beete ↔ Beetplaner |
 | später | Sonnenstunden-Karte, Gelände, PNG-Export und Druck, Journal-Fotos über den Blob-Endpunkt |
 

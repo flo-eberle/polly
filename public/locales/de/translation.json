@@ -2692,6 +2692,39 @@
       "all": "Alles",
       "current": "Ist",
       "target": "Ziel"
+    },
+    "sun": {
+      "title": "Sonne und Schatten",
+      "show": "Schattenwurf zeigen",
+      "hide": "Schattenwurf ausblenden",
+      "noLocation": "Für den Sonnenstand braucht Polly den Standort deines Gartens.",
+      "toSettings": "Standort festlegen",
+      "date": "Datum",
+      "presets": "Jahreszeiten",
+      "spring": "Frühling",
+      "summer": "Sommer",
+      "autumn": "Herbst",
+      "winter": "Winter",
+      "now": "Jetzt",
+      "time": "Uhrzeit",
+      "play": "Tagesverlauf abspielen",
+      "pause": "Anhalten",
+      "position": "Sonne {{altitude}}° hoch, aus {{direction}}.",
+      "down": "Die Sonne steht unter dem Horizont.",
+      "mature": "Ausgewachsen",
+      "matureHint": "Bäume und Sträucher mit Endhöhe und Endkrone, soweit eingetragen.",
+      "collapse": "Sonnenfeld einklappen",
+      "expand": "Sonnenfeld ausklappen"
+    },
+    "compass": {
+      "n": "Norden",
+      "ne": "Nordosten",
+      "e": "Osten",
+      "se": "Südosten",
+      "s": "Süden",
+      "sw": "Südwesten",
+      "w": "Westen",
+      "nw": "Nordwesten"
     }
   }
 }

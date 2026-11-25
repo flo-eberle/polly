@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
-import { Eye, EyeOff, ImagePlus, Lock, LockOpen, Map as MapIcon, Maximize, PenLine, Ruler, Trash2, X } from "lucide-react";
+import { Eye, EyeOff, ImagePlus, Lock, LockOpen, Map as MapIcon, Maximize, PenLine, Ruler, Sun, Trash2, X } from "lucide-react";
 import { useStore } from "@/store";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/Button";
@@ -30,7 +30,9 @@ import { SiteToolbar } from "./SiteToolbar";
 import { SiteProperties } from "./SiteProperties";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { isVisibleInView, type SiteView } from "./siteView";
-import { elementType, resolvedType } from "./elementTypes";
+import { SunPanel, initialSunSettings, sunDate, type SunSettings } from "./SunPanel";
+import { casterFor, shadowPolygons, sunAt } from "@/lib/siteShadow";
+import { elementType, resolvedType, shadowCasterOptions } from "./elementTypes";
 import { useElementHistory } from "./useElementHistory";
 import { useSiteImage } from "./useSiteImage";
 import { useIsDark } from "./useIsDark";
@@ -45,10 +47,12 @@ export function SitePlan() {
   const { toast, confirm } = useToast();
   const editable = usePointerFine();
   const dark = useIsDark();
-  const { settings, elements, backendUrl, setSiteBackground, updateSiteBackground, setNorthDeg, setSiteLayer } = useStore(
+  const { settings, elements, backendUrl, lat, lon, setSiteBackground, updateSiteBackground, setNorthDeg, setSiteLayer } = useStore(
     useShallow((s) => ({
       settings: s.siteSettings,
       elements: s.siteElements,
+      lat: s.locationLat,
+      lon: s.locationLon,
       backendUrl: s.backendUrl,
       setSiteBackground: s.setSiteBackground,
       updateSiteBackground: s.updateSiteBackground,
@@ -73,6 +77,22 @@ export function SitePlan() {
   const [planView, setPlanView] = useState<SiteView>("all");
   const shownElements = useMemo(() => elements.filter((e) => isVisibleInView(e, planView)), [elements, planView]);
   const selected = shownElements.find((e) => e.id === selectedId) ?? null;
+
+  const [shadowsOn, setShadowsOn] = useState(false);
+  const [sun, setSun] = useState<SunSettings>(() => initialSunSettings());
+  const shadows = useMemo(() => {
+    if (!shadowsOn || lat === null || lon === null) return null;
+    const position = sunAt(sunDate(sun), lat, lon);
+    const solid: number[][] = [];
+    const partial: number[][] = [];
+    for (const el of shownElements) {
+      if (!layerState(settings, elementType(el.kind).layer).visible) continue;
+      const caster = casterFor(el, shadowCasterOptions(el, sun.mature));
+      if (!caster) continue;
+      (caster.partial ? partial : solid).push(...shadowPolygons(caster, position, settings.northDeg));
+    }
+    return { solid, partial };
+  }, [shadowsOn, lat, lon, sun, shownElements, settings]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -288,6 +308,7 @@ export function SitePlan() {
           className="relative min-h-[360px] flex-1 overflow-hidden rounded-xl border border-gray-200 bg-white touch-none dark:border-white/10 dark:bg-gray-900"
           style={{ height: "calc(100dvh - 13rem)" }}
           data-testid="site-canvas"
+          data-shadows={shadows ? shadows.solid.length + shadows.partial.length : undefined}
         >
           {size.width > 0 && (
             <SiteCanvas
@@ -310,6 +331,7 @@ export function SitePlan() {
               onDeleteSelected={() => void deleteSelected()}
               onUndo={undo}
               onRedo={redo}
+              shadows={shadows}
               dark={dark}
             />
           )}
@@ -344,6 +366,20 @@ export function SitePlan() {
             <span>{t("site.north.short")}</span>
             <span className="sr-only">{t("site.north.label", { deg: settings.northDeg })}</span>
           </div>
+
+          <div className="absolute right-3 top-[5.25rem]">
+            <IconButton
+              icon={Sun}
+              label={t(shadowsOn ? "site.sun.hide" : "site.sun.show")}
+              aria-pressed={shadowsOn}
+              tone={shadowsOn ? "brand" : "neutral"}
+              onClick={() => setShadowsOn(!shadowsOn)}
+              className={`shadow-xs ${shadowsOn ? "bg-garden-50 ring-1 ring-inset ring-garden-600/40 dark:bg-garden-500/15" : "bg-white/85 dark:bg-gray-900/85"}`}
+            />
+          </div>
+          {shadowsOn && (
+            <SunPanel settings={sun} onChange={setSun} onClose={() => setShadowsOn(false)} lat={lat} lon={lon} />
+          )}
 
           {/* Scale bar */}
           <div className="pointer-events-none absolute bottom-3 left-3 rounded-lg bg-white/85 px-2 py-1 text-xs text-gray-800 shadow-xs dark:bg-gray-900/85 dark:text-gray-100">

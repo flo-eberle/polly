@@ -22,6 +22,14 @@ export interface ElementStyle {
  * A sub-kind (greenhouse under building, wall under fence). It shares layer
  * and shapes with its kind and overrides only what differs.
  */
+/** How an element casts its shadow (see lib/siteShadow.ts). */
+export interface ShadowSpec {
+  /** Fraction of the height where the shading part starts: a crown above its trunk. */
+  baseFraction?: number;
+  /** Translucent (fence, glass): drawn lighter. */
+  partial?: boolean;
+}
+
 export interface ElementVariant {
   id: string;
   labelKey: string;
@@ -29,6 +37,7 @@ export interface ElementVariant {
   style?: Partial<ElementStyle>;
   lineWidthM?: number;
   heightM?: number;
+  shadow?: ShadowSpec;
 }
 
 export interface ElementType {
@@ -42,8 +51,9 @@ export interface ElementType {
   style: ElementStyle;
   /** Line width in metres for polyline kinds (path, hedge, fence). */
   lineWidthM?: number;
-  /** Default height in metres, used later for shadows. */
+  /** Default height in metres, used for shadows. Kinds without one cast none. */
   heightM?: number;
+  shadow?: ShadowSpec;
   /** Sub-kinds; the first is the default and should describe the kind itself. */
   variants?: ElementVariant[];
 }
@@ -65,6 +75,7 @@ export const ELEMENT_TYPES: ElementType[] = [
         icon: Warehouse,
         style: { fill: "rgba(186,230,253,0.6)", stroke: "#0284c7" },
         heightM: 2.5,
+        shadow: { partial: true },
       },
       {
         id: "compost",
@@ -116,6 +127,8 @@ export const ELEMENT_TYPES: ElementType[] = [
     shapes: ["circle"],
     style: { fill: "rgba(63,125,78,0.45)", stroke: "#2f6b40", strokeWidthPx: 1.5 },
     heightM: 6,
+    // The crown starts at about a third of the height; the trunk's shadow is negligible.
+    shadow: { baseFraction: 0.3 },
   },
   {
     kind: "shrub",
@@ -145,6 +158,7 @@ export const ELEMENT_TYPES: ElementType[] = [
     style: { stroke: "#57534e", strokeWidthPx: 1, dash: [6, 3] },
     lineWidthM: 0.08,
     heightM: 1.2,
+    shadow: { partial: true },
     variants: [
       { id: "fence", labelKey: "site.kinds.fence", icon: Fence },
       {
@@ -154,6 +168,7 @@ export const ELEMENT_TYPES: ElementType[] = [
         style: { stroke: "#8a8580", dash: undefined },
         lineWidthM: 0.25,
         heightM: 1.5,
+        shadow: { partial: false },
       },
     ],
   },
@@ -204,6 +219,7 @@ export function resolvedType(element: Pick<SiteElement, "kind" | "variant" | "ma
   heightM?: number;
   labelKey: string;
   icon: LucideIcon;
+  shadow: ShadowSpec;
 } {
   const type = elementType(element.kind);
   const variant = elementVariant(element.kind, element.variant);
@@ -219,5 +235,21 @@ export function resolvedType(element: Pick<SiteElement, "kind" | "variant" | "ma
     heightM: variant?.heightM ?? type.heightM,
     labelKey: variant?.labelKey ?? type.labelKey,
     icon: variant?.icon ?? type.icon,
+    shadow: { ...type.shadow, ...variant?.shadow },
+  };
+}
+
+/**
+ * What an element casts: its height (own or the registry default) and shadow
+ * spec. With `mature`, trees and shrubs use their mature height and crown.
+ */
+export function shadowCasterOptions(element: SiteElement, mature: boolean) {
+  const resolved = resolvedType(element);
+  const height = (mature ? element.matureHeightM : undefined) ?? element.heightM ?? resolved.heightM;
+  return {
+    height,
+    baseFraction: resolved.shadow.baseFraction,
+    partial: resolved.shadow.partial,
+    crownDiameterM: mature ? element.matureCrownDiameterM : undefined,
   };
 }

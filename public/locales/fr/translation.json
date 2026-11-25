@@ -2817,6 +2817,39 @@
       "all": "Tout",
       "current": "Actuel",
       "target": "Cible"
+    },
+    "sun": {
+      "title": "Soleil et ombre",
+      "show": "Afficher les ombres",
+      "hide": "Masquer les ombres",
+      "noLocation": "Pour la position du soleil, Polly a besoin de l’emplacement de votre jardin.",
+      "toSettings": "Définir l’emplacement",
+      "date": "Date",
+      "presets": "Saisons",
+      "spring": "Printemps",
+      "summer": "Été",
+      "autumn": "Automne",
+      "winter": "Hiver",
+      "now": "Maintenant",
+      "time": "Heure",
+      "play": "Lire la journée",
+      "pause": "Pause",
+      "position": "Soleil à {{altitude}}° au-dessus de l’horizon, direction {{direction}}.",
+      "down": "Le soleil est sous l’horizon.",
+      "mature": "Adultes",
+      "matureHint": "Arbres et arbustes à leur hauteur et couronne adultes, si renseignées.",
+      "collapse": "Réduire le panneau soleil",
+      "expand": "Développer le panneau soleil"
+    },
+    "compass": {
+      "n": "nord",
+      "ne": "nord-est",
+      "e": "est",
+      "se": "sud-est",
+      "s": "sud",
+      "sw": "sud-ouest",
+      "w": "ouest",
+      "nw": "nord-ouest"
     }
   }
 }

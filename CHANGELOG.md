@@ -39,6 +39,13 @@ turns that section into a version heading.
   removed are red and crossed out. A view switch shows everything, today's
   state or the target state. Names appear on the plan (layer "Labels").
 - On phones a tapped element shows its status, species, use and year planted.
+- Shadows on the site plan: the sun button shows where every element with a
+  height casts its shadow, for any date and time at the garden's location.
+  Season shortcuts, a time slider over the daylight hours, playback of the
+  whole day, and a "fully grown" option that uses mature heights and crowns.
+  Tree shadows start at the crown; fences and greenhouses shade lighter.
+  Shadows fall on ground-level elements (surfaces, beds) and stay under
+  buildings and plants. The panel collapses to a single time row.
 
 ### Fixed
 - After an update, new texts could show as raw keys until the next reload:

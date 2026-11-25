@@ -2692,6 +2692,39 @@
       "all": "All",
       "current": "Current",
       "target": "Target"
+    },
+    "sun": {
+      "title": "Sun and shadow",
+      "show": "Show shadows",
+      "hide": "Hide shadows",
+      "noLocation": "For the sun position Polly needs your garden’s location.",
+      "toSettings": "Set location",
+      "date": "Date",
+      "presets": "Seasons",
+      "spring": "Spring",
+      "summer": "Summer",
+      "autumn": "Autumn",
+      "winter": "Winter",
+      "now": "Now",
+      "time": "Time",
+      "play": "Play the day",
+      "pause": "Pause",
+      "position": "Sun {{altitude}}° high, from the {{direction}}.",
+      "down": "The sun is below the horizon.",
+      "mature": "Fully grown",
+      "matureHint": "Trees and shrubs at their mature height and crown, where entered.",
+      "collapse": "Collapse sun panel",
+      "expand": "Expand sun panel"
+    },
+    "compass": {
+      "n": "north",
+      "ne": "northeast",
+      "e": "east",
+      "se": "southeast",
+      "s": "south",
+      "sw": "southwest",
+      "w": "west",
+      "nw": "northwest"
     }
   }
 }

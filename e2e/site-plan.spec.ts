@@ -307,6 +307,59 @@ test.describe("site plan properties", () => {
   });
 });
 
+test.describe("site plan shadows", () => {
+  // Times are local to the garden; CI runs in UTC.
+  test.use({ viewport: { width: 1440, height: 900 }, timezoneId: "Europe/Berlin" });
+
+  test("summer noon throws shadows north; without a location the panel asks for one", async ({ page }) => {
+    await seed(page); // Munich
+    await page.goto("/#/site");
+    await page.getByRole("button", { name: "Ohne Bild beginnen" }).click();
+    const canvas = page.getByTestId("site-canvas");
+    const box = (await canvas.boundingBox())!;
+    const c = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    await page.getByRole("button", { name: "Gebäude zeichnen" }).click();
+    await page.mouse.move(c.x - 50, c.y);
+    await page.mouse.down();
+    await page.mouse.move(c.x + 50, c.y + 60, { steps: 4 });
+    await page.mouse.up();
+    await page.keyboard.press("Escape");
+
+    await expect(canvas).not.toHaveAttribute("data-shadows");
+    await page.getByRole("button", { name: "Schattenwurf zeigen" }).click();
+    const panel = page.getByRole("region", { name: "Sonne und Schatten" });
+    await panel.getByRole("button", { name: "Sommer" }).click();
+    await panel.getByRole("slider", { name: "Uhrzeit" }).fill(String(13 * 60 + 20)); // solar noon in Munich (CEST)
+    await expect(panel.getByRole("status")).toContainText("aus Süden");
+    // Building footprint at both ends plus four edge quads.
+    await expect(canvas).toHaveAttribute("data-shadows", "6");
+
+    // Collapsed, only the time row stays, and the shadows with it.
+    await panel.getByRole("button", { name: "Sonnenfeld einklappen" }).click();
+    await expect(panel.getByLabel("Datum")).toHaveCount(0);
+    await expect(panel.getByRole("slider", { name: "Uhrzeit" })).toBeVisible();
+    await expect(canvas).toHaveAttribute("data-shadows", "6");
+
+    await panel.getByRole("button", { name: "Schattenwurf ausblenden" }).click();
+    await expect(canvas).not.toHaveAttribute("data-shadows");
+  });
+
+  test("asks for the location when none is set", async ({ page }) => {
+    await page.route(/open-meteo\.com|openweathermap\.org/, (r) => r.abort());
+    await page.addInitScript((state) => {
+      if (sessionStorage.getItem("__seeded")) return;
+      sessionStorage.setItem("__seeded", "1");
+      localStorage.clear();
+      localStorage.setItem("gardener-storage", JSON.stringify({ state: { ...state, locationLat: null, locationLon: null }, version: 4 }));
+    }, demoState);
+    await page.goto("/#/site");
+    await page.getByRole("button", { name: "Ohne Bild beginnen" }).click();
+    await page.getByRole("button", { name: "Schattenwurf zeigen" }).click();
+    await expect(page.getByRole("region", { name: "Sonne und Schatten" })).toContainText("Standort");
+    await expect(page.getByRole("link", { name: "Standort festlegen" })).toHaveAttribute("href", "#/settings");
+  });
+});
+
 test.describe("site plan on a phone", () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
 
