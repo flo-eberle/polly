@@ -52,15 +52,23 @@ export function shadowOffset(height: number, sun: Sun, northDeg: number): Point 
   return { x: dir.x * length, y: dir.y * length };
 }
 
-export interface Caster {
+/** A solid between two heights: its footprints lifted from `base` to `top`. */
+export interface CasterPart {
   /** Footprints on the ground; lines contribute one rectangle per segment. */
   footprints: Point[][];
-  /** Height where the shading part starts (a crown above the trunk). */
   base: number;
   top: number;
+}
+
+export interface Caster {
+  /** Usually one part; a tree has its crown and its trunk. */
+  parts: CasterPart[];
   /** Translucent casters (fences, greenhouses) shade less. */
   partial: boolean;
 }
+
+/** Trunk radius in metres: thin, but enough to tie a crown's shadow to its tree. */
+export const TRUNK_RADIUS_M = 0.15;
 
 const CIRCLE_SEGMENTS = 24;
 
@@ -120,7 +128,13 @@ export function casterFor(element: SiteElement, options: CasterOptions): Caster 
       footprints = lineFootprints(toPoints(shape.points), shape.width);
       break;
   }
-  return { footprints, base: top * (options.baseFraction ?? 0), top, partial: !!options.partial };
+  const base = top * (options.baseFraction ?? 0);
+  const parts: CasterPart[] = [{ footprints, base, top }];
+  // A crown above the ground stands on a trunk; its shadow links tree and crown shadow.
+  if (base > 0 && shape.type === "circle") {
+    parts.push({ footprints: [circlePoints(shape.cx, shape.cy, TRUNK_RADIUS_M)], base: 0, top: base });
+  }
+  return { parts, partial: !!options.partial };
 }
 
 const shift = (pts: Point[], d: Point) => pts.map((p) => ({ x: p.x + d.x, y: p.y + d.y }));
@@ -131,11 +145,15 @@ const flat = (pts: Point[]) => pts.flatMap((p) => [p.x, p.y]);
  * shadow; draw them opaque into one layer.
  */
 export function shadowPolygons(caster: Caster, sun: Sun, northDeg: number): number[][] {
-  const near = shadowOffset(caster.base, sun, northDeg);
-  const far = shadowOffset(caster.top, sun, northDeg);
+  return caster.parts.flatMap((part) => partPolygons(part, sun, northDeg));
+}
+
+function partPolygons(part: CasterPart, sun: Sun, northDeg: number): number[][] {
+  const near = shadowOffset(part.base, sun, northDeg);
+  const far = shadowOffset(part.top, sun, northDeg);
   if (!near || !far) return [];
   const out: number[][] = [];
-  for (const footprint of caster.footprints) {
+  for (const footprint of part.footprints) {
     if (footprint.length < 3) continue;
     const a = shift(footprint, near);
     const b = shift(footprint, far);

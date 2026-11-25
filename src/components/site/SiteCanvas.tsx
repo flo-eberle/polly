@@ -393,14 +393,19 @@ export const SiteCanvas = memo(function SiteCanvas(props: SiteCanvasProps) {
       {[GROUND_LAYERS, RAISED_LAYERS].map((group, gi) => (
         <Fragment key={gi}>
           {gi === 1 && shadows && (
-            <>
-              <Layer listening={false} opacity={(dark ? 0.32 : 0.22) * 0.5}>
-                {shadows.partial.map((pts, i) => <Line key={i} points={pts} closed fill="#0f172a" />)}
-              </Layer>
-              <Layer listening={false} opacity={dark ? 0.42 : 0.3}>
-                {shadows.solid.map((pts, i) => <Line key={i} points={pts} closed fill="#0f172a" />)}
-              </Layer>
-            </>
+            // Konva applies a layer's opacity to every shape on its own, so overlaps
+            // would darken. Shapes are drawn opaque and the layer's canvas is faded
+            // as a whole instead: overlapping shadows stay one even shade. Partial
+            // shadows are lighter and drawn first; a full shadow covers them.
+            <Layer
+              listening={false}
+              ref={(layer) => {
+                if (layer) layer.getNativeCanvasElement().style.opacity = String(dark ? 0.45 : 0.32);
+              }}
+            >
+              {shadows.partial.map((pts, i) => <Line key={`p${i}`} points={pts} closed fill="#64748b" />)}
+              {shadows.solid.map((pts, i) => <Line key={`s${i}`} points={pts} closed fill="#0f172a" />)}
+            </Layer>
           )}
           <Layer listening={selecting || !editable}>
             {visibleLayers.filter((l) => group.includes(l)).map((layer) => {

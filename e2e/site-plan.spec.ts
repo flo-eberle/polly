@@ -334,6 +334,19 @@ test.describe("site plan shadows", () => {
     // Building footprint at both ends plus four edge quads.
     await expect(canvas).toHaveAttribute("data-shadows", "6");
 
+    // Overlapping shadow polygons must not darken: the shadow canvas holds opaque
+    // pixels and is faded once as a whole (CSS opacity on the canvas element).
+    const shade = await page.evaluate(([x, y]) => {
+      const layer = [...document.querySelectorAll<HTMLCanvasElement>("[data-testid=site-canvas] canvas")].find((c) => c.style.opacity !== "");
+      if (!layer) return null;
+      const r = layer.getBoundingClientRect();
+      const ratio = layer.width / r.width;
+      const alphaAt = (px: number, py: number) => layer.getContext("2d")!.getImageData((px - r.left) * ratio, (py - r.top) * ratio, 1, 1).data[3];
+      // Just north of the building (edge quads) and under it, where footprint, shifted footprint and quads all overlap.
+      return { opacity: layer.style.opacity, edge: alphaAt(x, y - 5), overlap: alphaAt(x, y + 10) };
+    }, [c.x, c.y] as const);
+    expect(shade).toEqual({ opacity: "0.32", edge: 255, overlap: 255 });
+
     // Collapsed, only the time row stays, and the shadows with it.
     await panel.getByRole("button", { name: "Sonnenfeld einklappen" }).click();
     await expect(panel.getByLabel("Datum")).toHaveCount(0);

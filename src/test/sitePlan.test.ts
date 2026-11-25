@@ -37,7 +37,7 @@ import {
 import { ELEMENT_TYPES, MATERIAL_COLORS, elementType, elementVariant, resolvedType, shadowCasterOptions } from "@/components/site/elementTypes";
 import { fieldUpdates, fieldValue, fieldsFor } from "@/components/site/elementFields";
 import { isVisibleInView } from "@/components/site/siteView";
-import { MAX_SHADOW_M, casterFor, compassKey, shadowLength, shadowOffset, shadowPolygons, sunAt } from "@/lib/siteShadow";
+import { MAX_SHADOW_M, TRUNK_RADIUS_M, casterFor, compassKey, shadowLength, shadowOffset, shadowPolygons, sunAt } from "@/lib/siteShadow";
 import { readFileSync } from "node:fs";
 import { act, renderHook } from "@testing-library/react";
 import { newSiteElement, normalizeDeg } from "@/store/siteSlice";
@@ -499,7 +499,8 @@ describe("shadows", () => {
   it("sweeps a footprint from the base to the top height", () => {
     const tree = newSiteElement({ kind: "tree", layer: "woody", shape: { type: "rect", cx: 0, cy: 0, w: 2, h: 2, rotationDeg: 0 } });
     const caster = casterFor(tree, { height: 6, baseFraction: 0.5 })!;
-    expect(caster.base).toBe(3);
+    expect(caster.parts).toHaveLength(1); // trunks only for round crowns
+    expect(caster.parts[0].base).toBe(3);
     const polys = shadowPolygons(caster, south, 0);
     // Footprint at both ends plus one quad per edge.
     expect(polys).toHaveLength(2 + 4);
@@ -509,9 +510,23 @@ describe("shadows", () => {
     expect(Math.min(...ys)).toBeCloseTo(-7);
   });
 
+  it("ties a raised crown to the ground with its trunk", () => {
+    const tree = newSiteElement({ kind: "tree", layer: "woody", shape: { type: "circle", cx: 0, cy: 0, r: 2 } });
+    const caster = casterFor(tree, { height: 6, baseFraction: 0.3 })!;
+    const [crown, trunk] = caster.parts;
+    expect(crown.base).toBeCloseTo(1.8);
+    expect(crown.top).toBe(6);
+    expect(trunk.base).toBe(0);
+    expect(trunk.top).toBeCloseTo(1.8);
+    // The trunk's shadow starts at its foot (southern edge y = trunk radius) and runs to the crown's shadow.
+    const ys = shadowPolygons({ parts: [trunk], partial: false }, south, 0).flatMap((p) => p.filter((_, i) => i % 2 === 1));
+    expect(Math.max(...ys)).toBeCloseTo(TRUNK_RADIUS_M);
+    expect(Math.min(...ys)).toBeCloseTo(-1.8 - TRUNK_RADIUS_M);
+  });
+
   it("gives lines one rectangle per segment and skips elements without height", () => {
     const fence = newSiteElement({ kind: "fence", layer: "lines", shape: { type: "polyline", points: [0, 0, 10, 0, 10, 5], width: 0.2 } });
-    expect(casterFor(fence, { height: 1.2 })!.footprints).toHaveLength(2);
+    expect(casterFor(fence, { height: 1.2 })!.parts[0].footprints).toHaveLength(2);
     expect(casterFor(fence, { height: undefined })).toBeNull();
   });
 

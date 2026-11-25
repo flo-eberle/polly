@@ -43,7 +43,9 @@ turns that section into a version heading.
   height casts its shadow, for any date and time at the garden's location.
   Season shortcuts, a time slider over the daylight hours, playback of the
   whole day, and a "fully grown" option that uses mature heights and crowns.
-  Tree shadows start at the crown; fences and greenhouses shade lighter.
+  Tree shadows start at the crown and are tied to the tree by the trunk's
+  shadow; fences and greenhouses shade lighter. Overlapping shadows keep one
+  even shade.
   Shadows fall on ground-level elements (surfaces, beds) and stay under
   buildings and plants. The panel collapses to a single time row.
 
