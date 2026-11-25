@@ -37,7 +37,7 @@ import {
 import { ELEMENT_TYPES, MATERIAL_COLORS, elementType, elementVariant, resolvedType, shadowCasterOptions } from "@/components/site/elementTypes";
 import { fieldUpdates, fieldValue, fieldsFor } from "@/components/site/elementFields";
 import { isVisibleInView } from "@/components/site/siteView";
-import { MAX_SHADOW_M, TRUNK_RADIUS_M, casterFor, compassKey, shadowLength, shadowOffset, shadowPolygons, sunAt } from "@/lib/siteShadow";
+import { MAX_SHADOW_M, TRUNK_FRACTION, casterFor, compassKey, shadowLength, shadowOffset, shadowPolygons, sunAt } from "@/lib/siteShadow";
 import { readFileSync } from "node:fs";
 import { act, renderHook } from "@testing-library/react";
 import { newSiteElement, normalizeDeg } from "@/store/siteSlice";
@@ -520,8 +520,13 @@ describe("shadows", () => {
     expect(trunk.top).toBeCloseTo(1.8);
     // The trunk's shadow starts at its foot (southern edge y = trunk radius) and runs to the crown's shadow.
     const ys = shadowPolygons({ parts: [trunk], partial: false }, south, 0).flatMap((p) => p.filter((_, i) => i % 2 === 1));
-    expect(Math.max(...ys)).toBeCloseTo(TRUNK_RADIUS_M);
-    expect(Math.min(...ys)).toBeCloseTo(-1.8 - TRUNK_RADIUS_M);
+    const trunkR = 2 * TRUNK_FRACTION; // a quarter of the 2 m crown radius
+    expect(Math.max(...ys)).toBeCloseTo(trunkR);
+    expect(Math.min(...ys)).toBeCloseTo(-1.8 - trunkR);
+    // Fully grown, the trunk follows the mature crown.
+    const mature = casterFor(tree, { height: 6, baseFraction: 0.3, crownDiameterM: 8 })!;
+    const matureYs = shadowPolygons({ parts: [mature.parts[1]], partial: false }, south, 0).flatMap((p) => p.filter((_, i) => i % 2 === 1));
+    expect(Math.max(...matureYs)).toBeCloseTo(1);
   });
 
   it("gives lines one rectangle per segment and skips elements without height", () => {

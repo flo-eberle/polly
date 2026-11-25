@@ -67,8 +67,12 @@ export interface Caster {
   partial: boolean;
 }
 
-/** Trunk radius in metres: thin, but enough to tie a crown's shadow to its tree. */
-export const TRUNK_RADIUS_M = 0.15;
+/**
+ * Trunk radius as a fraction of the crown radius. Thicker than a real trunk on
+ * purpose: its shadow has to read as the link between a tree and its crown's
+ * shadow at plan scale.
+ */
+export const TRUNK_FRACTION = 0.25;
 
 const CIRCLE_SEGMENTS = 24;
 
@@ -119,7 +123,7 @@ export function casterFor(element: SiteElement, options: CasterOptions): Caster 
       footprints = [rectCorners(shape.cx, shape.cy, shape.w, shape.h, shape.rotationDeg)];
       break;
     case "circle":
-      footprints = [circlePoints(shape.cx, shape.cy, options.crownDiameterM ? options.crownDiameterM / 2 : shape.r)];
+      footprints = [circlePoints(shape.cx, shape.cy, crownRadius(shape.r, options))];
       break;
     case "polygon":
       footprints = [toPoints(shape.points)];
@@ -132,9 +136,13 @@ export function casterFor(element: SiteElement, options: CasterOptions): Caster 
   const parts: CasterPart[] = [{ footprints, base, top }];
   // A crown above the ground stands on a trunk; its shadow links tree and crown shadow.
   if (base > 0 && shape.type === "circle") {
-    parts.push({ footprints: [circlePoints(shape.cx, shape.cy, TRUNK_RADIUS_M)], base: 0, top: base });
+    parts.push({ footprints: [circlePoints(shape.cx, shape.cy, crownRadius(shape.r, options) * TRUNK_FRACTION)], base: 0, top: base });
   }
   return { parts, partial: !!options.partial };
+}
+
+function crownRadius(r: number, options: CasterOptions): number {
+  return options.crownDiameterM ? options.crownDiameterM / 2 : r;
 }
 
 const shift = (pts: Point[], d: Point) => pts.map((p) => ({ x: p.x + d.x, y: p.y + d.y }));
