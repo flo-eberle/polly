@@ -47,7 +47,7 @@ own). The backend only adds sync between devices.
 | State | `src/store/` | one slice per domain, combined in `store/index.ts` |
 | Logic | `src/lib/` | pure functions (sufficiency, succession, weather alerts, sync, export/import, …), unit-tested |
 | Types | `src/types/` | data model per domain |
-| Site plan | `src/components/site/`, `src/lib/siteGeometry.ts`, `src/lib/siteImage.ts`, `src/lib/blobStore.ts` | Konva canvas, lazy-loaded; plan coordinates in metres (x right, y down), north in `siteSettings.northDeg` |
+| Site plan | `src/components/site/`, `src/lib/siteGeometry.ts`, `src/lib/siteShapes.ts`, `src/lib/siteShadow.ts`, `src/lib/siteImage.ts`, `src/lib/blobStore.ts` | Konva canvas, lazy-loaded; plan coordinates in metres (x right, y down), north in `siteSettings.northDeg` |
 | Static data | `src/data/` | plant catalogue (`plants.json`), families, guilds |
 | Translations | `public/locales/{de,en,es,fr}/` | loaded over HTTP by i18next; German is the default |
 

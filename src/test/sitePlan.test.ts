@@ -34,9 +34,10 @@ import {
   translateShape,
   unionBounds,
 } from "@/lib/siteShapes";
-import { ELEMENT_TYPES, MATERIAL_COLORS, elementType, elementVariant, resolvedType } from "@/components/site/elementTypes";
+import { ELEMENT_TYPES, MATERIAL_COLORS, elementType, elementVariant, resolvedType, shadowCasterOptions } from "@/components/site/elementTypes";
 import { fieldUpdates, fieldValue, fieldsFor } from "@/components/site/elementFields";
 import { isVisibleInView } from "@/components/site/siteView";
+import { MAX_SHADOW_M, TRUNK_FRACTION, casterFor, compassKey, shadowLength, shadowOffset, shadowPolygons, sunAt } from "@/lib/siteShadow";
 import { readFileSync } from "node:fs";
 import { act, renderHook } from "@testing-library/react";
 import { newSiteElement, normalizeDeg } from "@/store/siteSlice";
@@ -469,5 +470,91 @@ describe("history coalescing", () => {
     expect(useStore.getState().siteElements[0].variety).toBeUndefined();
     act(() => result.current.undo());
     expect(useStore.getState().siteElements[0].name).toBeUndefined();
+  });
+});
+
+describe("shadows", () => {
+  const south = { altitudeDeg: 45, azimuthDeg: 180 }; // sun due south, 45° up
+
+  it("points shadows away from the sun, rotated by the plan's north", () => {
+    // North up: a southern sun throws the shadow up the plan (north), as long as the height.
+    const up = shadowOffset(5, south, 0)!;
+    expect(up.x).toBeCloseTo(0);
+    expect(up.y).toBeCloseTo(-5);
+    // North pointing right on the plan (90°): north is +x.
+    const right = shadowOffset(5, south, 90)!;
+    expect(right.x).toBeCloseTo(5);
+    expect(right.y).toBeCloseTo(0);
+    // Evening sun in the west throws shadows east.
+    const east = shadowOffset(1, { altitudeDeg: 45, azimuthDeg: 270 }, 0)!;
+    expect(east.x).toBeCloseTo(1);
+  });
+
+  it("casts nothing when the sun is down and caps very long shadows", () => {
+    expect(shadowOffset(5, { altitudeDeg: -3, azimuthDeg: 180 }, 0)).toBeNull();
+    expect(shadowLength(20, { altitudeDeg: 2.5, azimuthDeg: 180 })).toBe(MAX_SHADOW_M);
+    expect(shadowLength(3, { altitudeDeg: 30, azimuthDeg: 0 })).toBeCloseTo(3 / Math.tan(Math.PI / 6));
+  });
+
+  it("sweeps a footprint from the base to the top height", () => {
+    const tree = newSiteElement({ kind: "tree", layer: "woody", shape: { type: "rect", cx: 0, cy: 0, w: 2, h: 2, rotationDeg: 0 } });
+    const caster = casterFor(tree, { height: 6, baseFraction: 0.5 })!;
+    expect(caster.parts).toHaveLength(1); // trunks only for round crowns
+    expect(caster.parts[0].base).toBe(3);
+    const polys = shadowPolygons(caster, south, 0);
+    // Footprint at both ends plus one quad per edge.
+    expect(polys).toHaveLength(2 + 4);
+    const ys = polys.flatMap((p) => p.filter((_, i) => i % 2 === 1));
+    // Crown shadow spans from 3 m to 6 m north, plus the footprint's own extent of ±1 m.
+    expect(Math.max(...ys)).toBeCloseTo(-2);
+    expect(Math.min(...ys)).toBeCloseTo(-7);
+  });
+
+  it("ties a raised crown to the ground with its trunk", () => {
+    const tree = newSiteElement({ kind: "tree", layer: "woody", shape: { type: "circle", cx: 0, cy: 0, r: 2 } });
+    const caster = casterFor(tree, { height: 6, baseFraction: 0.3 })!;
+    const [crown, trunk] = caster.parts;
+    expect(crown.base).toBeCloseTo(1.8);
+    expect(crown.top).toBe(6);
+    expect(trunk.base).toBe(0);
+    expect(trunk.top).toBeCloseTo(1.8);
+    // The trunk's shadow starts at its foot (southern edge y = trunk radius) and runs to the crown's shadow.
+    const ys = shadowPolygons({ parts: [trunk], partial: false }, south, 0).flatMap((p) => p.filter((_, i) => i % 2 === 1));
+    const trunkR = 2 * TRUNK_FRACTION; // a quarter of the 2 m crown radius
+    expect(Math.max(...ys)).toBeCloseTo(trunkR);
+    expect(Math.min(...ys)).toBeCloseTo(-1.8 - trunkR);
+    // Fully grown, the trunk follows the mature crown.
+    const mature = casterFor(tree, { height: 6, baseFraction: 0.3, crownDiameterM: 8 })!;
+    const matureYs = shadowPolygons({ parts: [mature.parts[1]], partial: false }, south, 0).flatMap((p) => p.filter((_, i) => i % 2 === 1));
+    expect(Math.max(...matureYs)).toBeCloseTo(1);
+  });
+
+  it("gives lines one rectangle per segment and skips elements without height", () => {
+    const fence = newSiteElement({ kind: "fence", layer: "lines", shape: { type: "polyline", points: [0, 0, 10, 0, 10, 5], width: 0.2 } });
+    expect(casterFor(fence, { height: 1.2 })!.parts[0].footprints).toHaveLength(2);
+    expect(casterFor(fence, { height: undefined })).toBeNull();
+  });
+
+  it("uses own, default and mature heights from the registry", () => {
+    const tree = newSiteElement({ kind: "tree", layer: "woody", shape: { type: "circle", cx: 0, cy: 0, r: 1 }, matureHeightM: 12, matureCrownDiameterM: 8 });
+    expect(shadowCasterOptions(tree, false)).toMatchObject({ height: 6, baseFraction: 0.3 });
+    expect(shadowCasterOptions(tree, true)).toMatchObject({ height: 12, crownDiameterM: 8 });
+    expect(shadowCasterOptions({ ...tree, heightM: 4 }, false).height).toBe(4);
+    const fence = newSiteElement({ kind: "fence", layer: "lines", shape: { type: "polyline", points: [0, 0, 1, 0], width: 0.1 } });
+    expect(shadowCasterOptions(fence, false).partial).toBe(true);
+    expect(shadowCasterOptions({ ...fence, variant: "wall" }, false).partial).toBe(false);
+    const surface = newSiteElement({ kind: "surface", layer: "surfaces", shape: { type: "rect", cx: 0, cy: 0, w: 1, h: 1, rotationDeg: 0 } });
+    expect(shadowCasterOptions(surface, false).height).toBeUndefined();
+  });
+
+  it("reads the sun from SunCalc as a compass bearing", () => {
+    // Midsummer near Vienna, 8:00 and 16:00 CEST (UTC+2), independent of the test machine's zone.
+    const morning = sunAt(new Date(Date.UTC(2026, 5, 21, 6)), 48.3, 16.6);
+    const afternoon = sunAt(new Date(Date.UTC(2026, 5, 21, 14)), 48.3, 16.6);
+    expect(morning.azimuthDeg).toBeGreaterThan(60);
+    expect(morning.azimuthDeg).toBeLessThan(110);
+    expect(afternoon.azimuthDeg).toBeGreaterThan(230);
+    expect(compassKey(morning.azimuthDeg)).toBe("e");
+    expect(compassKey(359)).toBe("n");
   });
 });
