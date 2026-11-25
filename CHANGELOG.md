@@ -10,6 +10,16 @@ turns that section into a version heading.
 
 ## [Unreleased]
 
+### Added
+- Access token in Settings → Synchronisierung: the app sends it to the
+  backend as `Authorization: Bearer …` with every sync and image request, so
+  the backend can run with `GARDENER_TOKEN` when it is reachable from the
+  internet. The token stays on the device. A rejected token shows as "access
+  denied" in the top bar and under the field instead of "offline".
+- `TRUST_PROXY` for the backend: behind reverse proxies the rate limit now
+  counts per client instead of per proxy (the container's nginx forwards the
+  client address).
+
 ## [0.2.0] - 2026-11-25
 
 The site plan: the property to scale, drawn on top of a map or cadastral

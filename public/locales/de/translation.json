@@ -129,7 +129,8 @@
     "sync": {
       "syncing": "Wird synchronisiert …",
       "connected": "Mit dem Server verbunden",
-      "offline": "Server nicht erreichbar – Änderungen bleiben lokal"
+      "offline": "Server nicht erreichbar – Änderungen bleiben lokal",
+      "unauthorized": "Zugang verweigert: Token prüfen"
     },
     "skipToContent": "Zum Inhalt springen"
   },
@@ -1106,7 +1107,10 @@
     "version": "Version",
     "privacyPolicy": "Datenschutzerklärung",
     "sourceCode": "Quellcode auf GitHub",
-    "license": "Lizenz (MIT)"
+    "license": "Lizenz (MIT)",
+    "backendToken": "Zugangs-Token",
+    "backendTokenHint": "Der Wert von GARDENER_TOKEN am Server. Bleibt auf diesem Gerät.",
+    "backendTokenRejected": "Der Server hat den Token abgelehnt. Bitte prüfen."
   },
   "dataManagement": {
     "title": "Daten & Backup",

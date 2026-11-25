@@ -129,7 +129,8 @@
     "sync": {
       "syncing": "Syncing…",
       "connected": "Connected to the server",
-      "offline": "Server unreachable – changes stay on this device"
+      "offline": "Server unreachable – changes stay on this device",
+      "unauthorized": "Access denied: check the token"
     },
     "skipToContent": "Skip to content"
   },
@@ -1106,7 +1107,10 @@
     "version": "Version",
     "privacyPolicy": "Privacy policy",
     "sourceCode": "Source code on GitHub",
-    "license": "License (MIT)"
+    "license": "License (MIT)",
+    "backendToken": "Access token",
+    "backendTokenHint": "The value of GARDENER_TOKEN on the server. Stays on this device.",
+    "backendTokenRejected": "The server rejected the token. Please check it."
   },
   "dataManagement": {
     "title": "Data & backup",

@@ -9,6 +9,7 @@ import {
   type RemoteChange,
   type SyncBase,
 } from "./records";
+import { backendFetch, type BackendConfig } from "../backend";
 
 /**
  * One sync round against the record API: push what changed here, then pull
@@ -36,14 +37,14 @@ interface PullResponse {
   changes: RemoteChange[];
 }
 
-async function pull(fetchFn: typeof fetch, url: string, since: number, tombstones = false): Promise<PullResponse> {
-  const res = await fetchFn(`${url}/api/changes?since=${since}${tombstones ? "&tombstones=1" : ""}`);
+async function pull(backend: BackendConfig, since: number, tombstones = false): Promise<PullResponse> {
+  const res = await backendFetch(backend, `/api/changes?since=${since}${tombstones ? "&tombstones=1" : ""}`);
   if (!res.ok) throw new Error(`pull responded ${res.status}`);
   return (await res.json()) as PullResponse;
 }
 
-async function push(fetchFn: typeof fetch, url: string, changes: Change[]): Promise<void> {
-  const res = await fetchFn(`${url}/api/changes`, {
+async function push(backend: BackendConfig, changes: Change[]): Promise<void> {
+  const res = await backendFetch(backend, "/api/changes", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ changes }),
@@ -61,7 +62,9 @@ export async function runSyncRound(
   backendUrl: string,
   mode: SyncMode,
   fetchFn: typeof fetch = fetch,
+  token: string | null = null,
 ): Promise<SyncRoundResult> {
+  const backend: BackendConfig = { url: backendUrl, token, fetch: fetchFn };
   let pulled = 0;
   const stored = store.getState().syncBase;
   let base: SyncBase;
@@ -70,28 +73,28 @@ export async function runSyncRound(
     base = stored;
   } else {
     // First contact with this backend: join both sides before anything is pushed.
-    const remote = await pull(fetchFn, backendUrl, 0);
+    const remote = await pull(backend, 0);
     const { updates, hashes } = initialBase(store.getState(), remote.changes);
     base = { backendUrl, epoch: remote.epoch, rev: remote.rev, hashes };
     store.setState({ ...updates, syncBase: base });
     pulled += remote.changes.length;
   }
 
-  let pushed = await pushChanges(store, backendUrl, base, fetchFn);
+  let pushed = await pushChanges(store, backend, base);
 
   if (mode === "full" || pushed > 0) {
     base = store.getState().syncBase ?? base;
-    const remote = await pull(fetchFn, backendUrl, base.rev);
+    const remote = await pull(backend, base.rev);
 
     if (remote.epoch !== base.epoch) {
       // The server restarted, maybe on a restored database: revisions from
       // before are not comparable. Rejoin from its complete state.
-      const full = await pull(fetchFn, backendUrl, 0, true);
+      const full = await pull(backend, 0, true);
       const current: SyncBase = store.getState().syncBase ?? base;
       const { updates, hashes } = rejoinBase(store.getState(), current.hashes, full.changes);
       store.setState({ ...updates, syncBase: { backendUrl, epoch: full.epoch, rev: full.rev, hashes } });
       pulled += full.changes.length;
-      pushed += await pushChanges(store, backendUrl, store.getState().syncBase!, fetchFn);
+      pushed += await pushChanges(store, backend, store.getState().syncBase!);
       return { pushed, pulled };
     }
 
@@ -105,11 +108,11 @@ export async function runSyncRound(
 }
 
 /** Pushes everything that differs from the base, in batches. */
-async function pushChanges(store: SyncStore, backendUrl: string, base: SyncBase, fetchFn: typeof fetch): Promise<number> {
+async function pushChanges(store: SyncStore, backend: BackendConfig, base: SyncBase): Promise<number> {
   const changes = diffAgainstBase(collectLocalRecords(store.getState()), base.hashes);
   for (let i = 0; i < changes.length; i += PUSH_BATCH) {
     const batch = changes.slice(i, i + PUSH_BATCH);
-    await push(fetchFn, backendUrl, batch);
+    await push(backend, batch);
     // Re-read: another round may have moved the base meanwhile.
     const current: SyncBase = store.getState().syncBase ?? base;
     store.setState({ syncBase: { ...current, hashes: baseAfterPush(current.hashes, batch) } });

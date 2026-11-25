@@ -130,7 +130,8 @@
     "sync": {
       "syncing": "Synchronisation…",
       "connected": "Connecté au serveur",
-      "offline": "Serveur injoignable – les modifications restent sur cet appareil"
+      "offline": "Serveur injoignable – les modifications restent sur cet appareil",
+      "unauthorized": "Accès refusé : vérifiez le jeton"
     },
     "skipToContent": "Aller au contenu"
   },
@@ -1139,7 +1140,10 @@
     "version": "Version",
     "privacyPolicy": "Politique de confidentialité",
     "sourceCode": "Code source sur GitHub",
-    "license": "Licence (MIT)"
+    "license": "Licence (MIT)",
+    "backendToken": "Jeton d’accès",
+    "backendTokenHint": "La valeur de GARDENER_TOKEN sur le serveur. Reste sur cet appareil.",
+    "backendTokenRejected": "Le serveur a refusé le jeton. Vérifiez-le."
   },
   "dataManagement": {
     "title": "Données et sauvegarde",

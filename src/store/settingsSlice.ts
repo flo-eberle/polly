@@ -21,6 +21,8 @@ export interface SettingsSlice {
   lastFrostDate: string;
   gridCellSizeCm: number;
   backendUrl: string | null;
+  /** GARDENER_TOKEN of the backend. Stays on this device: neither synced nor exported. */
+  backendToken: string | null;
   theme: "light" | "dark" | "system";
   alerts: AlertConfig;
   lastBackupDate: string | null;
@@ -32,6 +34,7 @@ export interface SettingsSlice {
   setLastFrostDate: (date: string) => void;
   setTheme: (theme: "light" | "dark" | "system") => void;
   setBackendUrl: (url: string | null) => void;
+  setBackendToken: (token: string | null) => void;
   setGridCellSizeCm: (size: number) => void;
   setAlerts: (alerts: Partial<AlertConfig>) => void;
   setLastBackupDate: (date: string) => void;
@@ -48,6 +51,7 @@ export const createSettingsSlice: StateCreator<SettingsSlice> = (set) => ({
   lastFrostDate: "2026-05-15",
   gridCellSizeCm: 30,
   backendUrl: null,
+  backendToken: null,
   theme: "system",
   syncBase: null,
   alerts: {
@@ -65,6 +69,7 @@ export const createSettingsSlice: StateCreator<SettingsSlice> = (set) => ({
   setLastFrostDate: (lastFrostDate) => set({ lastFrostDate }),
   setTheme: (theme) => set({ theme }),
   setBackendUrl: (backendUrl) => set({ backendUrl }),
+  setBackendToken: (backendToken) => set({ backendToken }),
   setGridCellSizeCm: (gridCellSizeCm) => set({ gridCellSizeCm }),
   setAlerts: (updates) =>
     set((state) => ({ alerts: { ...state.alerts, ...updates } })),

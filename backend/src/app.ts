@@ -14,10 +14,18 @@ export interface AppOptions {
   allowedOrigins?: string[];
   /** Requests per minute per IP on /api; tests raise it. */
   rateLimitPerMinute?: number;
+  /**
+   * Number of reverse proxies in front of the backend whose X-Forwarded-For
+   * entries are trusted. The container's own nginx is one; behind NPM add one,
+   * behind Cloudflare another. Without it every client shares one IP and one
+   * rate-limit bucket.
+   */
+  trustProxy?: number;
 }
 
 export function createApp(options: AppOptions = {}) {
   const app = express();
+  app.set("trust proxy", options.trustProxy ?? 1);
 
   app.use(cors({
     origin: options.allowedOrigins ?? ["http://localhost:5173", "http://localhost:4173", "http://localhost:8080"],

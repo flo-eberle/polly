@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
-import { Menu, Cloud, CloudOff, RefreshCw, Search, Sprout } from "lucide-react";
+import { Menu, Cloud, CloudOff, KeyRound, RefreshCw, Search, Sprout } from "lucide-react";
 import { useStore } from "@/store";
 import { useShallow } from "zustand/react/shallow";
 import { useBackendSync } from "@/hooks/useBackendSync";
@@ -22,7 +22,9 @@ export function TopBar({ onMenuClick, onSearchClick }: TopBarProps) {
   const { t } = useTranslation();
   const { pathname } = useLocation();
   const { backendUrl } = useStore(useShallow((s) => ({ backendUrl: s.backendUrl })));
-  const { connected, syncing } = useBackendSync();
+  const { connected, syncing, outcome } = useBackendSync();
+  const unauthorized = !syncing && outcome.kind === "unauthorized";
+  const syncLabel = syncing ? t("shell.sync.syncing") : unauthorized ? t("shell.sync.unauthorized") : connected ? t("shell.sync.connected") : t("shell.sync.offline");
   const entry = navEntry(sectionIdForPath(pathname));
 
   return (
@@ -61,12 +63,14 @@ export function TopBar({ onMenuClick, onSearchClick }: TopBarProps) {
           {backendUrl && (
             <span
               className="inline-flex size-9 items-center justify-center"
-              title={syncing ? t("shell.sync.syncing") : connected ? t("shell.sync.connected") : t("shell.sync.offline")}
+              title={syncLabel}
               role="status"
-              aria-label={syncing ? t("shell.sync.syncing") : connected ? t("shell.sync.connected") : t("shell.sync.offline")}
+              aria-label={syncLabel}
             >
               {syncing ? (
                 <RefreshCw size={16} aria-hidden="true" className="animate-spin text-garden-600 dark:text-garden-300" />
+              ) : unauthorized ? (
+                <KeyRound size={16} aria-hidden="true" className="text-danger" />
               ) : connected ? (
                 <Cloud size={16} aria-hidden="true" className="text-garden-600 dark:text-garden-300" />
               ) : (

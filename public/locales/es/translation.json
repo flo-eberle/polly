@@ -130,7 +130,8 @@
     "sync": {
       "syncing": "Sincronizando…",
       "connected": "Conectado al servidor",
-      "offline": "Servidor no disponible: los cambios se quedan en este dispositivo"
+      "offline": "Servidor no disponible: los cambios se quedan en este dispositivo",
+      "unauthorized": "Acceso denegado: revisa el token"
     },
     "skipToContent": "Saltar al contenido"
   },
@@ -1139,7 +1140,10 @@
     "version": "Versión",
     "privacyPolicy": "Política de privacidad",
     "sourceCode": "Código fuente en GitHub",
-    "license": "Licencia (MIT)"
+    "license": "Licencia (MIT)",
+    "backendToken": "Token de acceso",
+    "backendTokenHint": "El valor de GARDENER_TOKEN en el servidor. Se queda en este dispositivo.",
+    "backendTokenRejected": "El servidor rechazó el token. Revísalo."
   },
   "dataManagement": {
     "title": "Datos y copia de seguridad",

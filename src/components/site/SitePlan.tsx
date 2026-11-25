@@ -47,13 +47,14 @@ export function SitePlan() {
   const { toast, confirm } = useToast();
   const editable = usePointerFine();
   const dark = useIsDark();
-  const { settings, elements, backendUrl, lat, lon, setSiteBackground, updateSiteBackground, setNorthDeg, setSiteLayer } = useStore(
+  const { settings, elements, backendUrl, backendToken, lat, lon, setSiteBackground, updateSiteBackground, setNorthDeg, setSiteLayer } = useStore(
     useShallow((s) => ({
       settings: s.siteSettings,
       elements: s.siteElements,
       lat: s.locationLat,
       lon: s.locationLon,
       backendUrl: s.backendUrl,
+      backendToken: s.backendToken,
       setSiteBackground: s.setSiteBackground,
       updateSiteBackground: s.updateSiteBackground,
       setNorthDeg: s.setNorthDeg,
@@ -61,7 +62,7 @@ export function SitePlan() {
     })),
   );
   const bg = settings.background;
-  const image = useSiteImage(bg?.imageId, backendUrl);
+  const image = useSiteImage(bg?.imageId, backendUrl, backendToken);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
