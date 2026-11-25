@@ -4,9 +4,29 @@ import react from "@vitejs/plugin-react-swc";
 import { VitePWA } from "vite-plugin-pwa";
 import { fileURLToPath, URL } from "url";
 import { readFileSync } from "fs";
+import type { Plugin } from "vite";
+
+/**
+ * Dev only: translations live in public/ and are fetched once at start, so an
+ * edited translation file never reaches an open tab while hot reload already
+ * swaps in components that use the new keys. Reload the page instead.
+ */
+function reloadOnTranslationChange(): Plugin {
+  return {
+    name: "polly-reload-on-translation-change",
+    apply: "serve",
+    configureServer(server) {
+      server.watcher.add("public/locales/**/*.json");
+      server.watcher.on("change", (file) => {
+        if (/[\\/]public[\\/]locales[\\/].+\.json$/.test(file)) server.ws.send({ type: "full-reload" });
+      });
+    },
+  };
+}
 
 export default defineConfig({
   plugins: [
+    reloadOnTranslationChange(),
     tailwindcss(),
     react(),
     VitePWA({
