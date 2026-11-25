@@ -2534,7 +2534,8 @@
     "empty": {
       "title": "No site plan yet",
       "description": "Import an image of your property, such as a map section or a cadastral plan. Then set its scale.",
-      "descriptionViewOnly": "The site plan is set up on a computer."
+      "descriptionViewOnly": "The site plan is set up on a computer.",
+      "startBlank": "Start without an image"
     },
     "background": {
       "title": "Background image",
@@ -2587,6 +2588,57 @@
       "show": "Show layer “{{name}}”",
       "lock": "Lock layer “{{name}}”",
       "unlock": "Unlock layer “{{name}}”"
+    },
+    "tools": {
+      "label": "Tools",
+      "select": "Select and move",
+      "measure": "Measure",
+      "draw": "Draw: {{kind}}",
+      "undo": "Undo",
+      "redo": "Redo",
+      "shape": "Shape",
+      "variant": "Type"
+    },
+    "shapes": {
+      "rect": "Rectangle",
+      "polygon": "Polygon",
+      "circle": "Circle"
+    },
+    "hints": {
+      "rect": "Drag from corner to corner. Esc leaves the tool.",
+      "circle": "Drag out from the centre. Esc leaves the tool.",
+      "polygon": "Click the corners. Finish by clicking the first point, double-clicking or pressing Enter. Backspace removes the last point.",
+      "polyline": "Click the points. Finish with a double-click or Enter. Backspace removes the last point."
+    },
+    "measure": {
+      "hint": "Click points; a double-click or Enter ends the measurement. Esc clears it.",
+      "total": "Total: {{length}}"
+    },
+    "kinds": {
+      "building": "Building",
+      "surface": "Surface",
+      "path": "Path",
+      "bed": "Bed",
+      "tree": "Tree",
+      "shrub": "Shrub",
+      "hedge": "Hedge",
+      "fence": "Fence",
+      "unknown": "Unknown element",
+      "pond": "Pond"
+    },
+    "element": {
+      "info": "Selected element",
+      "area": "{{value}} m²",
+      "perimeter": "Perimeter {{value}}",
+      "length": "Length {{value}}",
+      "delete": "Delete element",
+      "deleteTitle": "Delete “{{name}}”?",
+      "deleteMessage": "The element is removed from the site plan. Ctrl+Z brings it back."
+    },
+    "variants": {
+      "greenhouse": "Greenhouse",
+      "compost": "Compost",
+      "wall": "Wall"
     }
   }
 }

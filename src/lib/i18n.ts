@@ -22,7 +22,8 @@ i18n
     fallbackLng: "en",
     supportedLngs: ["en", "de", "es", "fr"],
     backend: {
-      loadPath: `${import.meta.env.BASE_URL}locales/{{lng}}/{{ns}}.json`,
+      // The build id keeps browser caches from serving the previous release's texts.
+      loadPath: `${import.meta.env.BASE_URL}locales/{{lng}}/{{ns}}.json?v=${__BUILD_ID__}`,
     },
     interpolation: {
       escapeValue: false,
@@ -35,5 +36,19 @@ function syncDocumentLanguage(lng: string) {
 }
 syncDocumentLanguage(i18n.language ?? getStoredLocale());
 i18n.on("languageChanged", syncDocumentLanguage);
+
+/**
+ * After an update the new service worker takes over while the page runs on.
+ * Pages loaded lazily from then on are the new ones, but the texts in memory
+ * are still the old ones, so new keys would show raw. Reload the texts when
+ * the worker changes (not on its very first install, where nothing changed).
+ */
+if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+  const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!hadController) return;
+    void i18n.reloadResources().then(() => i18n.changeLanguage(i18n.language));
+  });
+}
 
 export default i18n;

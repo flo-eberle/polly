@@ -284,7 +284,7 @@ Nicht geplant ist eine echte 3D-Ansicht.
 |---|---|
 | 0 | Sync pro Eintrag: `records`, `/api/changes`, Blob-Endpunkt, Übernahme alter Snapshots, Tests — **umgesetzt** (Branch `feat/record-sync`) |
 | 1 | **umgesetzt** (#11) — Lageplan-Grundgerüst: Route `/site`, Sidebar „Grundstück“, Verschieben und Zoomen, Hintergrund importieren, kalibrieren, verschieben und drehen, Nordrichtung, Raster und Maßstab, Ebenen-Panel, Store/Export/Import |
-| 2 | Zeichnen und Attribute: Polygon, Rechteck, Kreis, Linie; Transformieren und Eckpunkte; Eigenschaften-Panel aus der Registry; Status-Ansichten; Fläche und Länge; Messwerkzeug; Rückgängig; Löschen mit Bestätigung; am Handy nur Ansicht |
+| 2 | **teilweise umgesetzt** (#12: Zeichnen, Bearbeiten, Messen, Rückgängig, Registry mit Arten und Stil; offen: Eigenschaften-Panel, Status-Ansichten) — Zeichnen und Attribute: Polygon, Rechteck, Kreis, Linie; Transformieren und Eckpunkte; Eigenschaften-Panel aus der Registry; Status-Ansichten; Fläche und Länge; Messwerkzeug; Rückgängig; Löschen mit Bestätigung; am Handy nur Ansicht |
 | 3 | Bibliothek: Palette, generierte Symbole, Flächenmuster |
 | 4 | Schatten: SunCalc, Schatten-Layer, Zeitregler |
 | 5 | Verknüpfungen: Ernte für Gehölze, Schnitt-Aufgaben, Beete ↔ Beetplaner |

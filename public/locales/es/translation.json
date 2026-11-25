@@ -2659,7 +2659,8 @@
     "empty": {
       "title": "Aún no hay plano",
       "description": "Importa una imagen de tu parcela, por ejemplo un recorte de mapa o un plano catastral. Después fija la escala.",
-      "descriptionViewOnly": "El plano se crea en un ordenador."
+      "descriptionViewOnly": "El plano se crea en un ordenador.",
+      "startBlank": "Empezar sin imagen"
     },
     "background": {
       "title": "Imagen de fondo",
@@ -2712,6 +2713,57 @@
       "show": "Mostrar la capa «{{name}}»",
       "lock": "Bloquear la capa «{{name}}»",
       "unlock": "Desbloquear la capa «{{name}}»"
+    },
+    "tools": {
+      "label": "Herramientas",
+      "select": "Seleccionar y mover",
+      "measure": "Medir",
+      "draw": "Dibujar: {{kind}}",
+      "undo": "Deshacer",
+      "redo": "Rehacer",
+      "shape": "Forma",
+      "variant": "Tipo"
+    },
+    "shapes": {
+      "rect": "Rectángulo",
+      "polygon": "Polígono",
+      "circle": "Círculo"
+    },
+    "hints": {
+      "rect": "Arrastra de esquina a esquina. Esc sale de la herramienta.",
+      "circle": "Arrastra desde el centro. Esc sale de la herramienta.",
+      "polygon": "Haz clic en las esquinas. Termina con un clic en el primer punto, doble clic o Intro. Retroceso quita el último punto.",
+      "polyline": "Haz clic en los puntos. Termina con doble clic o Intro. Retroceso quita el último punto."
+    },
+    "measure": {
+      "hint": "Haz clic en puntos; doble clic o Intro termina la medición. Esc la borra.",
+      "total": "Total: {{length}}"
+    },
+    "kinds": {
+      "building": "Edificio",
+      "surface": "Superficie",
+      "path": "Camino",
+      "bed": "Bancal",
+      "tree": "Árbol",
+      "shrub": "Arbusto",
+      "hedge": "Seto",
+      "fence": "Valla",
+      "unknown": "Elemento desconocido",
+      "pond": "Estanque"
+    },
+    "element": {
+      "info": "Elemento seleccionado",
+      "area": "{{value}} m²",
+      "perimeter": "Perímetro {{value}}",
+      "length": "Longitud {{value}}",
+      "delete": "Eliminar elemento",
+      "deleteTitle": "¿Eliminar «{{name}}»?",
+      "deleteMessage": "El elemento se quita del plano. Ctrl+Z lo recupera."
+    },
+    "variants": {
+      "greenhouse": "Invernadero",
+      "compost": "Compost",
+      "wall": "Muro"
     }
   }
 }

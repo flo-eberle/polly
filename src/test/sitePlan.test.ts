@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { useStore } from "@/store";
-import { normalizeDeg } from "@/store/siteSlice";
 import {
   calibratedMetersPerPixel,
   fitBounds,
@@ -19,7 +18,27 @@ import { fitWithin, MAX_BACKGROUND_EDGE } from "@/lib/siteImage";
 import { ensureRemoteBlob, loadBlob } from "@/lib/blobStore";
 import { attachBlobs, buildExportData, referencedBlobIds } from "@/lib/dataExport";
 import { importAllData, restoreBlobs } from "@/lib/dataImport";
-import { defaultSiteSettings, layerState, type SiteBackground, type SiteSettings } from "@/types/site";
+import {
+  edgeMidpoints,
+  insertVertex,
+  moveVertex,
+  pathLength,
+  polygonArea,
+  rectCorners,
+  rectFromCorners,
+  removeVertex,
+  shapeArea,
+  shapeBounds,
+  shapeLength,
+  toPoints,
+  translateShape,
+  unionBounds,
+} from "@/lib/siteShapes";
+import { ELEMENT_TYPES, elementType, elementVariant, resolvedType } from "@/components/site/elementTypes";
+import { act, renderHook } from "@testing-library/react";
+import { newSiteElement, normalizeDeg } from "@/store/siteSlice";
+import { useElementHistory } from "@/components/site/useElementHistory";
+import { SITE_LAYERS, defaultSiteSettings, layerState, type SiteBackground, type SiteSettings } from "@/types/site";
 
 const BG: SiteBackground = {
   imageId: "site-bg-1",
@@ -250,5 +269,112 @@ describe("blob sync with the backend", () => {
     expect(await loadBlob("a", { url: "http://b", fetch: fetchFn }, local)).not.toBeNull();
     expect(downloads).toBe(1);
     expect(await loadBlob("b", null, local)).toBeNull();
+  });
+});
+
+describe("site shapes", () => {
+  const square = [0, 0, 4, 0, 4, 3, 0, 3];
+
+  it("measures areas and lengths", () => {
+    expect(polygonArea(toPoints(square))).toBe(12);
+    expect(shapeArea({ type: "polygon", points: square })).toBe(12);
+    expect(shapeLength({ type: "polygon", points: square })).toBe(14);
+    expect(shapeArea({ type: "rect", cx: 0, cy: 0, w: 2, h: 5, rotationDeg: 33 })).toBe(10);
+    expect(shapeArea({ type: "circle", cx: 0, cy: 0, r: 1 })).toBeCloseTo(Math.PI);
+    expect(shapeArea({ type: "polyline", points: [0, 0, 3, 4], width: 1 })).toBeNull();
+    expect(shapeLength({ type: "polyline", points: [0, 0, 3, 4, 3, 10], width: 1 })).toBe(11);
+    expect(pathLength(toPoints(square), true)).toBe(14);
+  });
+
+  it("rotates rectangle corners about the centre", () => {
+    const c = rectCorners(0, 0, 2, 2, 90);
+    expect(c[0].x).toBeCloseTo(1);
+    expect(c[0].y).toBeCloseTo(-1);
+  });
+
+  it("computes bounds, including line width and rotation", () => {
+    expect(shapeBounds({ type: "polyline", points: [0, 0, 10, 0], width: 2 })).toEqual({ minX: -1, minY: -1, maxX: 11, maxY: 1 });
+    const b = shapeBounds({ type: "rect", cx: 0, cy: 0, w: 4, h: 2, rotationDeg: 90 })!;
+    expect(b.maxY - b.minY).toBeCloseTo(4);
+    expect(unionBounds([null, { minX: 0, minY: 0, maxX: 1, maxY: 1 }, { minX: -2, minY: 0, maxX: 0, maxY: 5 }])).toEqual({ minX: -2, minY: 0, maxX: 1, maxY: 5 });
+    expect(unionBounds([])).toBeNull();
+  });
+
+  it("moves shapes and edits vertices", () => {
+    expect(translateShape({ type: "polygon", points: [0, 0, 1, 1] }, 2, 3)).toEqual({ type: "polygon", points: [2, 3, 3, 4] });
+    expect(translateShape({ type: "circle", cx: 0, cy: 0, r: 1 }, 1, -1)).toEqual({ type: "circle", cx: 1, cy: -1, r: 1 });
+    expect(moveVertex(square, 1, { x: 5, y: 0 })).toEqual([0, 0, 5, 0, 4, 3, 0, 3]);
+    expect(insertVertex(square, 0, { x: 2, y: -1 })).toEqual([0, 0, 2, -1, 4, 0, 4, 3, 0, 3]);
+    expect(removeVertex(square, 0, 3)).toEqual([4, 0, 4, 3, 0, 3]);
+    expect(removeVertex([0, 0, 1, 0, 1, 1], 0, 3)).toEqual([0, 0, 1, 0, 1, 1]);
+    expect(edgeMidpoints(square, true)).toHaveLength(4);
+    expect(edgeMidpoints(square, false)).toHaveLength(3);
+  });
+
+  it("builds a rectangle from two corners in any order", () => {
+    expect(rectFromCorners({ x: 4, y: 3 }, { x: 0, y: 1 })).toEqual({ type: "rect", cx: 2, cy: 2, w: 4, h: 2, rotationDeg: 0 });
+  });
+});
+
+describe("element registry", () => {
+  it("puts every kind on a known layer with at least one shape", () => {
+    const kinds = new Set<string>();
+    for (const type of ELEMENT_TYPES) {
+      expect(SITE_LAYERS).toContain(type.layer);
+      expect(type.shapes.length).toBeGreaterThan(0);
+      if (type.shapes.includes("polyline")) expect(type.lineWidthM).toBeGreaterThan(0);
+      expect(kinds.has(type.kind)).toBe(false);
+      kinds.add(type.kind);
+    }
+  });
+
+  it("gives every variant a unique id and resolves overrides", () => {
+    for (const type of ELEMENT_TYPES) {
+      const ids = (type.variants ?? []).map((v) => v.id);
+      expect(new Set(ids).size).toBe(ids.length);
+    }
+    const wall = resolvedType({ kind: "fence", variant: "wall" });
+    expect(wall.lineWidthM).toBe(0.25);
+    expect(wall.style.dash).toBeUndefined();
+    expect(wall.labelKey).toBe("site.variants.wall");
+    const fence = resolvedType({ kind: "fence" });
+    expect(fence.style.dash).toEqual([6, 3]);
+    expect(resolvedType({ kind: "building", variant: "greenhouse" }).heightM).toBe(2.5);
+    // Unknown variants fall back to the kind's default; kinds without variants have none.
+    expect(elementVariant("building", "future")?.id).toBe("building");
+    expect(elementVariant("tree", undefined)).toBeNull();
+  });
+
+  it("falls back for kinds written by a newer version", () => {
+    expect(elementType("future-kind").kind).toBe("unknown");
+    expect(elementType("tree").layer).toBe("woody");
+  });
+});
+
+describe("element history", () => {
+  beforeEach(resetSite);
+
+  it("undoes and redoes element edits and clears redo on a new edit", () => {
+    const { result } = renderHook(() => useElementHistory());
+    const a = newSiteElement({ kind: "tree", layer: "woody", shape: { type: "circle", cx: 0, cy: 0, r: 1 } });
+    const b = newSiteElement({ kind: "bed", layer: "beds", shape: { type: "rect", cx: 0, cy: 0, w: 1, h: 2, rotationDeg: 0 } });
+
+    act(() => result.current.commit([a]));
+    act(() => result.current.commit([a, b]));
+    expect(useStore.getState().siteElements).toHaveLength(2);
+    expect(result.current.canUndo).toBe(true);
+
+    act(() => result.current.undo());
+    expect(useStore.getState().siteElements).toEqual([a]);
+    expect(result.current.canRedo).toBe(true);
+
+    act(() => result.current.redo());
+    expect(useStore.getState().siteElements).toEqual([a, b]);
+
+    act(() => result.current.undo());
+    act(() => result.current.commit([]));
+    expect(result.current.canRedo).toBe(false);
+    act(() => result.current.undo());
+    expect(useStore.getState().siteElements).toEqual([a]);
   });
 });

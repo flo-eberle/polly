@@ -4,9 +4,29 @@ import react from "@vitejs/plugin-react-swc";
 import { VitePWA } from "vite-plugin-pwa";
 import { fileURLToPath, URL } from "url";
 import { readFileSync } from "fs";
+import type { Plugin } from "vite";
+
+/**
+ * Dev only: translations live in public/ and are fetched once at start, so an
+ * edited translation file never reaches an open tab while hot reload already
+ * swaps in components that use the new keys. Reload the page instead.
+ */
+function reloadOnTranslationChange(): Plugin {
+  return {
+    name: "polly-reload-on-translation-change",
+    apply: "serve",
+    configureServer(server) {
+      server.watcher.add("public/locales/**/*.json");
+      server.watcher.on("change", (file) => {
+        if (/[\\/]public[\\/]locales[\\/].+\.json$/.test(file)) server.ws.send({ type: "full-reload" });
+      });
+    },
+  };
+}
 
 export default defineConfig({
   plugins: [
+    reloadOnTranslationChange(),
     tailwindcss(),
     react(),
     VitePWA({
@@ -44,6 +64,8 @@ export default defineConfig({
         skipWaiting: true,
         clientsClaim: true,
         navigateFallback: "index.html",
+        // Translations are requested with ?v=<build id>; the precache entry is the same file.
+        ignoreURLParametersMatching: [/^v$/, /^utm_/, /^fbclid$/],
         runtimeCaching: [
           {
             urlPattern: /assets\/.*\.(js|css)$/,
@@ -66,6 +88,7 @@ export default defineConfig({
   ],
   // Shown under Settings → "Über Polly" (the stores ask for a visible version).
   define: {
+    __BUILD_ID__: JSON.stringify(Date.now().toString(36)),
     __APP_VERSION__: JSON.stringify((JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8")) as { version: string }).version),
   },
   resolve: {
