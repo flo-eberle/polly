@@ -28,7 +28,7 @@ are documented in the homelab repo; this page describes what Polly needs.
 # /opt/polly/docker-compose.yml
 services:
   polly:
-    image: ghcr.io/flo-eberle/polly:0.2.0   # always a fixed version, never :latest
+    image: ghcr.io/flo-eberle/polly:0.3.0   # always a fixed version, never :latest
     restart: unless-stopped
     ports:
       - "8090:80"
