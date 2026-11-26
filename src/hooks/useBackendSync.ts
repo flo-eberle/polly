@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useStore } from "@/store";
 import { runSyncRound, type SyncMode, type SyncStore } from "@/lib/sync/client";
+import { setSyncStatus } from "@/lib/sync/status";
+import { UnauthorizedError } from "@/lib/backend";
 
 /**
  * Record sync with the optional backend (see lib/sync/records.ts).
@@ -15,10 +17,11 @@ import { runSyncRound, type SyncMode, type SyncStore } from "@/lib/sync/client";
 const PUSH_DELAY_MS = 2000;
 const PULL_INTERVAL_MS = 30000;
 
-export type SyncOutcome = { kind: "idle" } | { kind: "synced" } | { kind: "failed" };
+export type SyncOutcome = { kind: "idle" } | { kind: "synced" } | { kind: "failed" } | { kind: "unauthorized" };
 
 export function useBackendSync() {
   const backendUrl = useStore((s) => s.backendUrl);
+  const backendToken = useStore((s) => s.backendToken);
   const [online, setOnline] = useState<{ url: string; ok: boolean } | null>(null);
   const connected = !!backendUrl && online?.url === backendUrl && online.ok;
   const [syncing, setSyncing] = useState(false);
@@ -53,22 +56,26 @@ export function useBackendSync() {
       };
 
       let next: SyncMode | null = mode;
+      setSyncStatus("syncing");
       while (next) {
         pendingRef.current = null;
         try {
-          await runSyncRound(store, backendUrl, next);
+          await runSyncRound(store, backendUrl, next, fetch, backendToken);
           setOnline({ url: backendUrl, ok: true });
           setOutcome({ kind: "synced" });
-        } catch {
+          setSyncStatus("synced");
+        } catch (error) {
           setOnline({ url: backendUrl, ok: false });
-          setOutcome({ kind: "failed" });
+          const unauthorized = error instanceof UnauthorizedError;
+          setOutcome({ kind: unauthorized ? "unauthorized" : "failed" });
+          setSyncStatus(unauthorized ? "unauthorized" : "offline");
         }
         next = pendingRef.current;
       }
       runningRef.current = false;
       setSyncing(false);
     },
-    [backendUrl],
+    [backendUrl, backendToken],
   );
 
   // Full round on start, on a timer, on focus and when the network returns.

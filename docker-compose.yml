@@ -11,6 +11,9 @@ services:
       # Set a token as soon as this container is reachable beyond a trusted
       # network — without it the API accepts unauthenticated requests.
       # - GARDENER_TOKEN=change-me
+      # Reverse proxies in front, counting the container's own nginx
+      # (1 = none beyond it). See docs/DEPLOYMENT.md.
+      # - TRUST_PROXY=1
 
 volumes:
   gardener-data:

@@ -1,3 +1,5 @@
+import { backendFetch, type BackendConfig } from "./backend";
+
 /**
  * Binary data addressed by id: the site plan background now, journal photos
  * later. Locally in IndexedDB, on the backend under /api/blobs/:id.
@@ -69,10 +71,7 @@ export async function deleteBlob(id: string): Promise<void> {
 
 // --- Backend ---------------------------------------------------------------
 
-export interface BlobBackend {
-  url: string;
-  fetch?: typeof fetch;
-}
+export type BlobBackend = BackendConfig;
 
 /** Uploads the local blob unless the backend already has it. */
 export async function ensureRemoteBlob(
@@ -80,13 +79,12 @@ export async function ensureRemoteBlob(
   backend: BlobBackend,
   readLocal: (id: string) => Promise<Blob | null> = getBlob,
 ): Promise<"present" | "uploaded" | "missing-local"> {
-  const doFetch = backend.fetch ?? fetch;
-  const head = await doFetch(`${backend.url}/api/blobs/${id}`, { method: "HEAD" });
+  const head = await backendFetch(backend, `/api/blobs/${id}`, { method: "HEAD" });
   if (head.ok) return "present";
   if (head.status !== 404) throw new Error(`blob check responded ${head.status}`);
   const blob = await readLocal(id);
   if (!blob) return "missing-local";
-  const put = await doFetch(`${backend.url}/api/blobs/${id}`, {
+  const put = await backendFetch(backend, `/api/blobs/${id}`, {
     method: "PUT",
     headers: { "Content-Type": blob.type || "application/octet-stream" },
     body: blob,
@@ -107,7 +105,7 @@ export async function loadBlob(
   const cached = await local.get(id).catch(() => null);
   if (cached) return cached;
   if (!backend) return null;
-  const res = await (backend.fetch ?? fetch)(`${backend.url}/api/blobs/${id}`);
+  const res = await backendFetch(backend, `/api/blobs/${id}`);
   if (!res.ok) return null;
   const blob = await res.blob();
   await local.put(id, blob).catch(() => undefined);

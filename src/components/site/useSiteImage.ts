@@ -12,14 +12,14 @@ export type SiteImageState =
  * when this device does not have it yet. With a backend configured, a local
  * image the backend lacks is uploaded, so other devices can fetch it.
  */
-export function useSiteImage(imageId: string | undefined, backendUrl: string | null): SiteImageState {
+export function useSiteImage(imageId: string | undefined, backendUrl: string | null, backendToken: string | null = null): SiteImageState {
   const [state, setState] = useState<{ id: string; value: SiteImageState } | null>(null);
 
   useEffect(() => {
     if (!imageId) return;
     let cancelled = false;
     let objectUrl: string | null = null;
-    const backend = backendUrl ? { url: backendUrl } : null;
+    const backend = backendUrl ? { url: backendUrl, token: backendToken } : null;
 
     void (async () => {
       const blob = await loadBlob(imageId, backend).catch(() => null);
@@ -46,7 +46,7 @@ export function useSiteImage(imageId: string | undefined, backendUrl: string | n
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [imageId, backendUrl]);
+  }, [imageId, backendUrl, backendToken]);
 
   if (!imageId) return { status: "none" };
   if (!state || state.id !== imageId) return { status: "loading" };

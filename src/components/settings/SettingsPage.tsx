@@ -23,6 +23,7 @@ import { DataManagement } from "./DataManagement";
 import { LocationPicker, type PickedLocation } from "./LocationPicker";
 import { useToday } from "@/hooks/useToday";
 import { useBackendAvailable } from "@/hooks/useBackendAvailable";
+import { useSyncStatus } from "@/lib/sync/status";
 import { useOpenFromParam } from "@/hooks/useOpenFromParam";
 
 type Locale = "de" | "en" | "es" | "fr";
@@ -75,6 +76,8 @@ export function SettingsPage() {
       lastFrostDate: s.lastFrostDate,
       gridCellSizeCm: s.gridCellSizeCm,
       backendUrl: s.backendUrl,
+      backendToken: s.backendToken,
+      setBackendToken: s.setBackendToken,
       alerts: s.alerts,
       setLocale: s.setLocale,
       setTheme: s.setTheme,
@@ -174,6 +177,7 @@ export function SettingsPage() {
     : t("settings.weatherKeyChecking");
 
   const showSync = useBackendAvailable(store.backendUrl);
+  const syncStatus = useSyncStatus();
   // App Store rule 3.1.1: no external tip links in the iOS app.
   // External tips are not allowed in the store apps (App Store 3.1.1, Play payments
   // policy): the coffee link only shows on the web.
@@ -376,6 +380,17 @@ export function SettingsPage() {
             onChange={(e) => store.setBackendUrl(e.target.value || null)}
             placeholder="http://localhost:3001"
             hint={t("settings.backendHint")}
+          />
+          <Input
+            label={t("settings.backendToken")}
+            type="password"
+            autoComplete="off"
+            spellCheck={false}
+            value={store.backendToken ?? ""}
+            onChange={(e) => store.setBackendToken(e.target.value || null)}
+            hint={t("settings.backendTokenHint")}
+            error={syncStatus === "unauthorized" ? t("settings.backendTokenRejected") : undefined}
+            wrapperClassName="mt-4"
           />
         </Section>}
 

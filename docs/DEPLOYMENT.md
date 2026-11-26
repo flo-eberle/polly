@@ -17,9 +17,10 @@ household should try a version on their phones before it goes live.
 
 ## Production
 
-Status: **not set up yet.** The plan follows the other services in the homelab
-(Docmost, Paperless): one LXC with Docker, data on the root disk, backups on the
-external disk.
+Status: **not set up yet** (issue #18). The plan follows the other services in
+the homelab (Docmost, Paperless): one LXC with Docker, data on the root disk,
+backups on the external disk. Homelab-specific details (LXC id, IP, NPM entry)
+are documented in the homelab repo; this page describes what Polly needs.
 
 ### Container
 
@@ -27,7 +28,7 @@ external disk.
 # /opt/polly/docker-compose.yml
 services:
   polly:
-    image: ghcr.io/flo-eberle/polly:0.1.0   # always a fixed version, never :latest
+    image: ghcr.io/flo-eberle/polly:0.2.0   # always a fixed version, never :latest
     restart: unless-stopped
     ports:
       - "8090:80"
@@ -35,21 +36,48 @@ services:
       - ./data:/app/data
     environment:
       - GARDENER_TOKEN=${GARDENER_TOKEN}     # from /opt/polly/.env, never committed
+      - TRUST_PROXY=3                        # Cloudflare → NPM → container nginx, see below
+```
+
+```bash
+# /opt/polly/.env — generated on the server, shown nowhere else
+GARDENER_TOKEN=<openssl rand -hex 32>
 ```
 
 The image serves frontend and backend from one origin (nginx proxies `/api` to
 the backend), so the backend URL in the app is the site itself and CORS does not
-come into play.
+come into play. The image is public on GHCR; pulling needs no login.
 
-### Access: open decision
-
-| Option | How | Consequence |
+| Variable | Default | Meaning |
 |---|---|---|
-| **A: public, behind NPM** | subdomain with Let's Encrypt via the Nginx Proxy Manager on the Pi, like Docmost | Full PWA (install, offline). The API is reachable from the internet, so `GARDENER_TOKEN` is mandatory, and the app has to send it. **The app does not send a token yet.** |
-| **B: Headscale tailnet only** | like the Kopfschmerz-Tagebuch | Not public. But plain HTTP on a tailnet IP is not a secure context: no service worker, so no install and no offline mode. Headscale does not issue certificates. |
+| `GARDENER_TOKEN` | unset (API open) | Shared access token. Mandatory as soon as the instance is reachable from the internet. |
+| `TRUST_PROXY` | `1` | Number of reverse proxies in front of the backend, counting the container's own nginx. The backend takes the client address from `X-Forwarded-For` through that many hops; it is used for the rate limit (100 requests per minute and client). Too low: all devices share one limit. Too high: clients can fake their address. |
 
-Preferred: **A**, after the app can send the token (settings field, sent as
-`Authorization: Bearer …` on every backend request).
+### Access: public behind the Nginx Proxy Manager
+
+Decided on 2026-11-25: Polly is reachable on its own subdomain over HTTPS, like
+Docmost. Only HTTPS gives the full PWA (install on the phone, offline mode).
+
+1. **DNS:** a subdomain (the Cloudflare wildcard already covers it; proxied is fine).
+2. **NPM proxy host:** the subdomain → `http://<LXC-IP>:8090`, Let's Encrypt
+   certificate, *Force SSL*, *HTTP/2*. Websockets are not needed.
+3. **Uploads:** background images go up to 20 MB. If an upload fails with
+   413, add `client_max_body_size 25m;` under the proxy host's *Advanced*
+   settings.
+4. **`TRUST_PROXY`:** Cloudflare (proxied) → NPM → container nginx = `3`.
+   Without Cloudflare's proxy (grey cloud) it is `2`.
+
+**Each device**, once: Settings → Synchronisierung:
+
+- *Backend-URL*: `https://<subdomain>`
+- *Zugangs-Token*: the value of `GARDENER_TOKEN`
+
+The token stays on the device (not synced, not in backups). A wrong or missing
+token shows as "Zugang verweigert" in the top bar and under the token field.
+
+Not chosen: the Headscale tailnet only (like the Kopfschmerz-Tagebuch). Plain
+HTTP on a tailnet address is not a secure context, so no service worker: no
+install, no offline mode; and Headscale issues no certificates.
 
 ### Backup
 
