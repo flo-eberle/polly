@@ -51,7 +51,7 @@ From **1.0.0** on (planned once Polly runs in production for the household):
 - **API:** phones keep a cached copy of the old frontend for a while after an
   update, so an endpoint the old frontend uses stays for at least one more
   minor release. Mark it as deprecated in the changelog and remove it under
-  `Removed` later. Current case: `/api/sync` (replaced by `/api/changes` in 0.1.0).
+  `Removed` later. Current case: `/api/sync` (replaced by `/api/changes` in 0.1.0, removal planned for 0.4.0).
 - **Records** pass through sync, backend and backup untouched. New fields are
   optional with a default; see the data-model rules in
   [PLAN_LAGEPLAN.md](PLAN_LAGEPLAN.md#leitlinie-erweiterbare-datenmodelle).

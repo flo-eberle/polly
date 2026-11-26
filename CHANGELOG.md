@@ -10,6 +10,11 @@ turns that section into a version heading.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-26
+
+Ready for a public instance: the app sends the backend's access token, and
+the rate limit works behind reverse proxies.
+
 ### Added
 - Access token in Settings → Synchronisierung: the app sends it to the
   backend as `Authorization: Bearer …` with every sync and image request, so
@@ -19,6 +24,10 @@ turns that section into a version heading.
 - `TRUST_PROXY` for the backend: behind reverse proxies the rate limit now
   counts per client instead of per proxy (the container's nginx forwards the
   client address).
+
+### Deprecated
+- `/api/sync` is still included; its removal moves from 0.3.0 to 0.4.0 to
+  keep this release small.
 
 ## [0.2.0] - 2026-11-25
 
@@ -72,7 +81,7 @@ image, with properties, planned and current state, and shadows.
 ### Deprecated
 - The whole-state sync endpoint `/api/sync` (replaced by `/api/changes` in
   0.1.0). It stays in this release for apps that have not updated yet and
-  will be removed in 0.3.0.
+  will be removed in a later release (see 0.3.0).
 
 ## [0.1.0] - 2026-11-24
 
@@ -100,6 +109,7 @@ offered up to its state of 2026-10-10 is included.
   startup. The old `/api/sync` endpoint stays for one more release.
 - nginx accepts request bodies up to 25 MB (was 1 MB).
 
-[Unreleased]: https://github.com/flo-eberle/polly/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/flo-eberle/polly/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/flo-eberle/polly/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/flo-eberle/polly/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/flo-eberle/polly/releases/tag/v0.1.0
